@@ -1,0 +1,197 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Helix{% endblock %}
+{% block page_name %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+
+    <section class="welcome-section">
+        <div>
+            <p class="eyebrow">YOUR SUPPORT WORKSPACE</p>
+            <h1>Good to see you, {{ current_user.name.split()[0] }} <span class="wave">✦</span></h1>
+            <p class="page-subtitle">
+                Track your support requests and get help from your AI assistant.
+            </p>
+        </div>
+
+        <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+            <span>＋</span> Create a ticket
+        </a>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">TOTAL TICKETS</span>
+                <span class="stat-icon purple">▤</span>
+            </div>
+            <div class="stat-value">{{ tickets|length }}</div>
+            <p class="stat-caption">All your support requests</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">OPEN TICKETS</span>
+                <span class="stat-icon blue">◷</span>
+            </div>
+            <div class="stat-value">
+                {{ tickets|selectattr('status', 'equalto', 'Open')|list|length }}
+            </div>
+            <p class="stat-caption">Waiting for resolution</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">IN PROGRESS</span>
+                <span class="stat-icon orange">↻</span>
+            </div>
+            <div class="stat-value">
+                {{ tickets|selectattr('status', 'equalto', 'In Progress')|list|length }}
+            </div>
+            <p class="stat-caption">Currently being worked on</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">RESOLVED</span>
+                <span class="stat-icon green">✓</span>
+            </div>
+            <div class="stat-value">
+                {{ tickets|selectattr('status', 'equalto', 'Resolved')|list|length }}
+            </div>
+            <p class="stat-caption">Successfully completed</p>
+        </div>
+    </section>
+
+    <section class="dashboard-grid">
+        <div class="panel tickets-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Recent tickets</h2>
+                    <p>Your latest support requests</p>
+                </div>
+                <a href="{{ url_for('tickets') }}" class="text-link">View all <span>→</span></a>
+            </div>
+
+            {% if tickets %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>TICKET</th>
+                            <th>SUBJECT</th>
+                            <th>STATUS</th>
+                            <th>PRIORITY</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets[:6] %}
+                        <tr>
+                            <td>
+                                <span class="ticket-number">
+                                    #{{ ticket.id }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="ticket-subject">
+                                    <strong>{{ ticket.title }}</strong>
+                                    <small>
+                                        {{ ticket.category if ticket.category else 'General support' }}
+                                    </small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ ticket.status|lower|replace(' ', '-') }}">
+                                    <span class="badge-dot"></span>
+                                    {{ ticket.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="priority-label priority-{{ ticket.priority|lower }}">
+                                    {{ ticket.priority }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('ticket', ticket_id=ticket.id) }}"
+                                   class="table-action" aria-label="View ticket">↗</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">▤</div>
+                <h3>No tickets yet</h3>
+                <p>Create your first support request and let Helix help you.</p>
+                <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+                    Create your first ticket
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <aside class="panel ai-panel">
+            <div class="ai-panel-glow"></div>
+            <div class="ai-panel-heading">
+                <span class="ai-sparkle">✦</span>
+                <span class="ai-label">HELIX INTELLIGENCE</span>
+                <span class="ai-live"><span></span> ONLINE</span>
+            </div>
+
+            <h2>Support, made smarter.</h2>
+            <p class="ai-description">
+                Describe your IT issue. Your AI assistant can analyse the problem
+                and suggest possible troubleshooting steps.
+            </p>
+
+            <div class="ai-feature">
+                <span class="feature-check">✓</span>
+                <div>
+                    <strong>AI-powered analysis</strong>
+                    <small>Understand potential causes</small>
+                </div>
+            </div>
+
+            <div class="ai-feature">
+                <span class="feature-check">✓</span>
+                <div>
+                    <strong>Suggested solutions</strong>
+                    <small>Get troubleshooting guidance</small>
+                </div>
+            </div>
+
+            <div class="ai-feature">
+                <span class="feature-check">✓</span>
+                <div>
+                    <strong>Ticket tracking</strong>
+                    <small>Follow progress in one place</small>
+                </div>
+            </div>
+
+            <a href="{{ url_for('create_ticket') }}" class="ai-panel-button">
+                Get IT support <span>→</span>
+            </a>
+
+            <p class="ai-disclaimer">
+                AI suggestions may need verification by your IT support team.
+            </p>
+        </aside>
+    </section>
+
+    <section class="help-banner">
+        <div class="help-banner-icon">?</div>
+        <div>
+            <strong>Need help with something?</strong>
+            <p>Submit a ticket with details about your issue to get started.</p>
+        </div>
+        <a href="{{ url_for('create_ticket') }}" class="text-link">Get support →</a>
+    </section>
+
+</div>
+{% endblock %}
+```

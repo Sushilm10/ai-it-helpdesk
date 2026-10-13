@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create IT Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="admin-container">
+        <h1>Create IT Agent</h1>
+        <p>Create an account for an IT support team member.</p>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+            <p>
+                <label for="name">Full name</label><br>
+                <input id="name" type="text" name="name" required>
+            </p>
+
+            <p>
+                <label for="email">Email address</label><br>
+                <input id="email" type="email" name="email" required>
+            </p>
+
+            <p>
+                <label for="password">Temporary password (minimum 8 characters)</label><br>
+                <input id="password" type="password" name="password" minlength="8" required>
+            </p>
+
+            <button type="submit">Create Agent Account</button>
+        </form>
+
+        <p>
+            <a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a>
+        </p>
+    </main>
+</body>
+</html>

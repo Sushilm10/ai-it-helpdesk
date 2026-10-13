@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Dashboard - AI IT Helpdesk</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <div class="admin-container">
+
+        <header class="admin-header">
+
+            <div>
+                <h1>AI IT Helpdesk</h1>
+
+                <p>
+                    IT Support Administration
+                </p>
+            </div>
+
+            <div class="admin-user">
+
+                <span>
+                    {{ current_user.name }}
+                </span>
+
+                <a href="{{ url_for('create_agent') }}">
+                    + Create IT Agent
+                </a>
+
+                <a href="{{ url_for('analytics') }}">
+                    View Analytics
+                </a>
+
+                <a href="{{ url_for('knowledge_base') }}">
+                    Knowledge Base
+                </a>
+
+                <a href="{{ url_for('logout') }}">
+                    Logout
+                </a>
+
+            </div>
+
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div style="margin-bottom: 25px; padding: 12px 18px; border-radius: 8px; background: rgba(70, 200, 120, 0.15); border: 1px solid rgba(70, 200, 120, 0.3);">
+                    {% for message in messages %}
+                        <p style="margin: 0; color: #75e89d; font-weight: 500;">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <span class="stat-label">
+                    Total Tickets
+                </span>
+
+                <strong class="stat-number">
+                    {{ total_tickets }}
+                </strong>
+            </div>
+
+
+            <div class="stat-card">
+                <span class="stat-label">
+                    Open Tickets
+                </span>
+
+                <strong class="stat-number">
+                    {{ open_tickets }}
+                </strong>
+            </div>
+
+
+            <div class="stat-card">
+                <span class="stat-label">
+                    High Priority
+                </span>
+
+                <strong class="stat-number">
+                    {{ high_priority }}
+                </strong>
+            </div>
+
+
+            <div class="stat-card">
+                <span class="stat-label">
+                    Resolved
+                </span>
+
+                <strong class="stat-number">
+                    {{ resolved_tickets }}
+                </strong>
+            </div>
+
+        </section>
+
+
+        <section class="tickets-section">
+
+            <div class="section-header">
+
+                <div>
+
+                    <h2>
+                        Support Tickets
+                    </h2>
+
+                    <p>
+                        Manage and monitor all support requests.
+                    </p>
+
+                </div>
+
+                <a
+                    class="create-button"
+                    href="{{ url_for('create_ticket') }}"
+                >
+                    + New Ticket
+                </a>
+
+            </div>
+
+            <form method="GET" action="{{ url_for('admin_dashboard') }}" class="filter-form">
+
+                <input
+                    type="search"
+                    name="search"
+                    placeholder="Search tickets..."
+                    value="{{ search }}"
+                >
+
+                <select name="status">
+                    <option value="">All statuses</option>
+                    {% for option in ["Open", "In Progress", "Resolved", "Closed"] %}
+                        <option value="{{ option }}"
+                            {% if selected_status == option %}selected{% endif %}>
+                            {{ option }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select name="priority">
+                    <option value="">All priorities</option>
+                    {% for option in ["Low", "Medium", "High", "Critical"] %}
+                        <option value="{{ option }}"
+                            {% if selected_priority == option %}selected{% endif %}>
+                            {{ option }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select name="agent_id">
+                    <option value="">All agents</option>
+                    <option value="unassigned"
+                        {% if selected_agent_id == "unassigned" %}selected{% endif %}>
+                        Unassigned
+                    </option>
+
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}"
+                            {% if selected_agent_id == agent.id|string %}selected{% endif %}>
+                            {{ agent.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">Apply Filters</button>
+                <a href="{{ url_for('admin_dashboard') }}">Clear</a>
+
+            </form>
+
+
+            {% if tickets %}
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Ticket</th>
+                            <th>User</th>
+                            <th>Assigned Agent</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>AI</th>
+                            <th>Created</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for ticket in tickets %}
+
+                        <tr>
+
+                            <td>
+
+                                <a
+                                    class="ticket-link"
+                                    href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
+                                >
+                                    #{{ ticket.id }} - {{ ticket.title }}
+                                </a>
+
+                            </td>
+
+
+                            <td>
+                                {{ ticket.user.name }}
+                            </td>
+
+
+                            <td>
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}"
+                                >
+                                    <select
+                                        name="assigned_to"
+                                        onchange="this.form.submit()"
+                                        class="status-select"
+                                    >
+                                        <option value="">Unassigned</option>
+
+                                        {% for agent in agents %}
+                                            <option
+                                                value="{{ agent.id }}"
+                                                {% if ticket.assigned_to == agent.id %}selected{% endif %}
+                                            >
+                                                {{ agent.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </td>
+
+
+                            <td>
+
+                                <span class="category-badge">
+                                    {{ ticket.category }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <span
+                                    class="priority-badge priority-{{ ticket.priority|lower }}"
+                                >
+                                    {{ ticket.priority }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('update_ticket_status', ticket_id=ticket.id) }}"
+                                >
+                            
+                                    <select
+                                        name="status"
+                                        onchange="this.form.submit()"
+                                        class="status-select"
+                                    >
+                            
+                                        <option
+                                            value="Open"
+                                            {% if ticket.status == "Open" %}selected{% endif %}
+                                        >
+                                            Open
+                                        </option>
+                            
+                                        <option
+                                            value="In Progress"
+                                            {% if ticket.status == "In Progress" %}selected{% endif %}
+                                        >
+                                            In Progress
+                                        </option>
+                            
+                                        <option
+                                            value="Resolved"
+                                            {% if ticket.status == "Resolved" %}selected{% endif %}
+                                        >
+                                            Resolved
+                                        </option>
+                            
+                                        <option
+                                            value="Closed"
+                                            {% if ticket.status == "Closed" %}selected{% endif %}
+                                        >
+                                            Closed
+                                        </option>
+                            
+                                    </select>
+                            
+                                </form>
+                            
+                            </td>
+
+
+                            <td>
+
+                                {% if ticket.ai_analyzed %}
+
+                                    <span class="ai-success">
+                                        ✓ Analyzed
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="ai-pending">
+                                        Not analyzed
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+                                {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="empty-state">
+
+                    <h3>
+                        No tickets yet
+                    </h3>
+
+                    <p>
+                        Support tickets will appear here.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <footer class="admin-footer">
+
+            <a href="{{ url_for('home') }}">
+                ← User Dashboard
+            </a>
+
+        </footer>
+
+    </div>
+
+</body>
+
+</html>

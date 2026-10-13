@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}AI Helpdesk{% endblock %}</title>
+    <meta name="theme-color" content="#0b0d14">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="app-shell">
+
+        <aside class="sidebar" id="sidebar">
+            <a href="{{ url_for('home') }}" class="brand">
+                <span class="brand-mark">A<span>i</span></span>
+                <span class="brand-copy">
+                    <strong>Helix</strong>
+                    <small>INTELLIGENT SUPPORT</small>
+                </span>
+            </a>
+
+            <div class="workspace-label">WORKSPACE</div>
+
+            <nav class="sidebar-nav">
+                {% if current_user.role == 'admin' %}
+                    <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}"
+                       href="{{ url_for('admin_dashboard') }}">
+                        <span class="nav-icon">▦</span>
+                        <span>Overview</span>
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}"
+                       href="{{ url_for('analytics') }}">
+                        <span class="nav-icon">◫</span>
+                        <span>Analytics</span>
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'knowledge_base' %}active{% endif %}"
+                       href="{{ url_for('knowledge_base') }}">
+                        <span class="nav-icon">▤</span>
+                        <span>Knowledge base</span>
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'create_agent' %}active{% endif %}"
+                       href="{{ url_for('create_agent') }}">
+                        <span class="nav-icon">♙</span>
+                        <span>Team members</span>
+                    </a>
+
+                {% elif current_user.role == 'agent' %}
+                    <a class="nav-link {% if request.endpoint == 'agent_dashboard' %}active{% endif %}"
+                       href="{{ url_for('agent_dashboard') }}">
+                        <span class="nav-icon">▦</span>
+                        <span>My workspace</span>
+                    </a>
+                {% else %}
+                    <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}"
+                       href="{{ url_for('home') }}">
+                        <span class="nav-icon">⌂</span>
+                        <span>Dashboard</span>
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'tickets' %}active{% endif %}"
+                       href="{{ url_for('tickets') }}">
+                        <span class="nav-icon">▤</span>
+                        <span>My tickets</span>
+                    </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="ai-status">
+                    <span class="status-indicator"></span>
+                    <div>
+                        <strong>AI engine</strong>
+                        <small>Local assistant enabled</small>
+                    </div>
+                </div>
+
+                <div class="profile-card">
+                    <div class="avatar">
+                        {{ current_user.name[:1]|upper }}
+                    </div>
+                    <div class="profile-details">
+                        <strong>{{ current_user.name }}</strong>
+                        <small>{{ current_user.role|capitalize }}</small>
+                    </div>
+                    <a href="{{ url_for('logout') }}"
+                       class="logout-link"
+                       title="Sign out"
+                       aria-label="Sign out">↗</a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="topbar">
+                <button class="mobile-menu" id="menuToggle"
+                        type="button" aria-label="Toggle navigation"
+                        aria-expanded="false">☰</button>
+
+                <div class="breadcrumb">
+                    <span>Workspace</span>
+                    <span class="breadcrumb-divider">/</span>
+                    <strong>{% block page_name %}Overview{% endblock %}</strong>
+                </div>
+
+                <div class="topbar-right">
+                    <span class="secure-label">
+                        <span class="status-indicator"></span>
+                        System ready
+                    </span>
+                    <div class="topbar-avatar">
+                        {{ current_user.name[:1]|upper }}
+                    </div>
+                </div>
+            </header>
+
+            <main class="page-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-container">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">
+                                    <span>{{ message }}</span>
+                                    <button type="button"
+                                            class="flash-close"
+                                            aria-label="Dismiss message">×</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+            <footer class="app-footer">
+                <span>HELIX <span class="footer-dot">•</span> AI IT HELPDESK</span>
+                <span>Intelligent support, simplified.</span>
+            </footer>
+        </div>
+    </div>
+
+    {% else %}
+        <div class="auth-layout">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="auth-flash-container">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                <span>{{ message }}</span>
+                                <button type="button"
+                                        class="flash-close"
+                                        aria-label="Dismiss message">×</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block auth_content %}{% endblock %}
+        </div>
+    {% endif %}
+
+    <script>
+        const menuToggle = document.getElementById("menuToggle");
+        const sidebar = document.getElementById("sidebar");
+
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener("click", () => {
+                const isOpen = sidebar.classList.toggle("sidebar-open");
+                menuToggle.setAttribute("aria-expanded", String(isOpen));
+            });
+        }
+
+        document.querySelectorAll(".flash-close").forEach(button => {
+            button.addEventListener("click", () => {
+                button.closest(".flash-message")?.remove();
+            });
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

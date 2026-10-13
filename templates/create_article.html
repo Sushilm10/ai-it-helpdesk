@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Knowledge Article</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="admin-container">
+        <h1>Create Knowledge Article</h1>
+        <p>Add a troubleshooting guide to the IT knowledge base.</p>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+            <p>
+                <label for="title">Article title</label><br>
+                <input id="title" name="title" maxlength="200" required>
+            </p>
+
+            <p>
+                <label for="category">Category</label><br>
+                <select id="category" name="category" required>
+                    <option value="Hardware">Hardware</option>
+                    <option value="Software">Software</option>
+                    <option value="Network">Network</option>
+                    <option value="Account & Access">Account & Access</option>
+                    <option value="Security">Security</option>
+                    <option value="Other">Other</option>
+                </select>
+            </p>
+
+            <p>
+                <label for="content">Troubleshooting instructions</label><br>
+                <textarea
+                    id="content"
+                    name="content"
+                    rows="10"
+                    required
+                ></textarea>
+            </p>
+
+            <button type="submit">Save Article</button>
+            <a href="{{ url_for('knowledge_base') }}">Cancel</a>
+        </form>
+    </main>
+</body>
+</html>

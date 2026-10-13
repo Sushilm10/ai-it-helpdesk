@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Agent Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="admin-container">
+        <header class="admin-header">
+            <div>
+                <h1>IT Agent Dashboard</h1>
+                <p>Welcome, {{ current_user.name }}</p>
+            </div>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <section class="tickets-section">
+            <h2>My Assigned Tickets</h2>
+
+            {% if tickets %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ticket</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                                            #{{ ticket.id }} - {{ ticket.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ ticket.category }}</td>
+                                    <td>{{ ticket.priority }}</td>
+                                    <td>
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('agent_update_ticket_status', ticket_id=ticket.id) }}"
+                                        >
+                                            <select
+                                                name="status"
+                                                class="status-select"
+                                                onchange="this.form.submit()"
+                                            >
+                                                <option value="Open"
+                                                    {% if ticket.status == "Open" %}selected{% endif %}>
+                                                    Open
+                                                </option>
+
+                                                <option value="In Progress"
+                                                    {% if ticket.status == "In Progress" %}selected{% endif %}>
+                                                    In Progress
+                                                </option>
+
+                                                <option value="Resolved"
+                                                    {% if ticket.status == "Resolved" %}selected{% endif %}>
+                                                    Resolved
+                                                </option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td>{{ ticket.created_at.strftime("%d %b %Y") }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h3>No tickets assigned yet</h3>
+                    <p>Tickets assigned to you will appear here.</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,258 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.id }} | Helix{% endblock %}
+{% block page_name %}Ticket #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+<div class="ticket-detail-page">
+
+    <div class="ticket-detail-heading">
+        <div>
+            <a href="{{ url_for('tickets') }}" class="back-link">
+                ← Back to My Tickets
+            </a>
+            <p class="eyebrow">SUPPORT CENTRE / TICKET #{{ ticket.id }}</p>
+            <h1>{{ ticket.title }}</h1>
+            <p class="page-subtitle">
+                Review your issue, track its status, and view AI troubleshooting guidance.
+            </p>
+        </div>
+
+        <span class="status-badge status-{{ ticket.status|lower|replace(' ', '-') }}">
+            <span class="badge-dot"></span>
+            {{ ticket.status }}
+        </span>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="ticket-flash-messages">
+                {% for category, message in messages %}
+                    <div class="ticket-flash {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="ticket-detail-layout">
+
+        <div class="ticket-detail-main">
+
+            <section class="detail-panel">
+                <div class="detail-panel-heading">
+                    <div class="detail-heading-icon">▤</div>
+                    <div>
+                        <h2>Ticket overview</h2>
+                        <p>Essential information about your support request</p>
+                    </div>
+                </div>
+
+                <div class="ticket-metadata-grid">
+                    <div class="metadata-item">
+                        <span class="metadata-label">TICKET ID</span>
+                        <strong>#{{ ticket.id }}</strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span class="metadata-label">PRIORITY</span>
+                        <strong class="priority-label priority-{{ ticket.priority|lower }}">
+                            {{ ticket.priority }}
+                        </strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span class="metadata-label">CATEGORY</span>
+                        <strong>{{ ticket.category or "General" }}</strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span class="metadata-label">DATE CREATED</span>
+                        <strong>
+                            {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
+                        </strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="detail-panel description-panel">
+                <div class="detail-panel-heading">
+                    <div class="detail-heading-icon">≡</div>
+                    <div>
+                        <h2>Problem description</h2>
+                        <p>Details supplied with your support request</p>
+                    </div>
+                </div>
+
+                <div class="ticket-description-text">{{ ticket.description }}</div>
+
+                {% if ticket.created_at %}
+                    <div class="description-timestamp">
+                        Submitted {{ ticket.created_at.strftime("%d %B %Y at %I:%M %p") }}
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="detail-panel ai-analysis-panel">
+                <div class="ai-detail-banner">
+                    <div class="ai-detail-icon">✦</div>
+                    <div>
+                        <p class="eyebrow">HELIX INTELLIGENCE</p>
+                        <h2>AI issue analysis</h2>
+                        <p>Automated troubleshooting guidance for your ticket</p>
+                    </div>
+                    {% if ticket.ai_analyzed %}
+                        <span class="ai-result-badge"><span></span> ANALYSIS READY</span>
+                    {% endif %}
+                </div>
+
+                {% if ticket.ai_analyzed %}
+
+                    <div class="ai-diagnosis-card">
+                        <div class="ai-section-label">
+                            <span>01</span> POTENTIAL DIAGNOSIS
+                        </div>
+
+                        <div class="ai-diagnosis-text">{{ ticket.ai_diagnosis or "No diagnosis provided." }}</div>
+                    </div>
+
+                    <div class="ai-solutions-section">
+                        <div class="ai-section-label">
+                            <span>02</span> RECOMMENDED SOLUTIONS
+                        </div>
+
+                        {% if ticket.ai_solution %}
+                            <ol class="ai-solution-list">
+                                {% for step in ticket.ai_solution.split("\n") %}
+                                    {% if step.strip() %}
+                                        <li>
+                                            <span class="solution-check">✓</span>
+                                            <div>{{ step.strip() }}</div>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ol>
+                        {% else %}
+                            <div class="ai-empty-message">
+                                No solution steps were provided for this ticket.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="ai-safety-note">
+                        <span>ⓘ</span>
+                        <p>
+                            AI-generated recommendations may be inaccurate.
+                            Verify suggested steps and follow your organisation's IT
+                            security policies before making system changes.
+                        </p>
+                    </div>
+
+                {% elif ticket.ai_error %}
+
+                    <div class="ai-state-message ai-error-state">
+                        <div class="ai-state-icon">!</div>
+                        <h3>Analysis could not be completed</h3>
+                        <p>{{ ticket.ai_error }}</p>
+                        <small>Your ticket details are still available above.</small>
+                    </div>
+
+                {% else %}
+
+                    <div class="ai-state-message">
+                        <div class="ai-state-icon">◷</div>
+                        <h3>Analysis is not available yet</h3>
+                        <p>
+                            AI diagnosis and troubleshooting recommendations
+                            will appear here when the analysis is available.
+                        </p>
+                    </div>
+
+                {% endif %}
+            </section>
+
+        </div>
+
+        <aside class="ticket-detail-sidebar">
+
+            <section class="ticket-progress-card">
+                <p class="eyebrow">REQUEST STATUS</p>
+                <h2>Ticket progress</h2>
+                <p class="progress-description">
+                    Keep track of the current state of your support request.
+                </p>
+
+                <div class="progress-status">
+                    <span class="progress-status-dot"></span>
+                    <div>
+                        <strong>{{ ticket.status }}</strong>
+                        <small>Current status</small>
+                    </div>
+                </div>
+
+                <div class="progress-track">
+                    {% set ticket_status = ticket.status|lower %}
+                    <div class="progress-step completed">
+                        <span class="progress-step-marker">✓</span>
+                        <div>
+                            <strong>Ticket created</strong>
+                            <small>Your request was submitted</small>
+                        </div>
+                    </div>
+
+                    <div class="progress-step {% if ticket_status in ['in progress', 'resolved', 'closed'] %}completed{% endif %}">
+                        <span class="progress-step-marker">
+                            {% if ticket_status in ['in progress', 'resolved', 'closed'] %}✓{% else %}2{% endif %}
+                        </span>
+                        <div>
+                            <strong>In progress</strong>
+                            <small>Support team works on the issue</small>
+                        </div>
+                    </div>
+
+                    <div class="progress-step {% if ticket_status in ['resolved', 'closed'] %}completed{% endif %}">
+                        <span class="progress-step-marker">
+                            {% if ticket_status in ['resolved', 'closed'] %}✓{% else %}3{% endif %}
+                        </span>
+                        <div>
+                            <strong>Resolved</strong>
+                            <small>The issue has been completed</small>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="progress-footnote">
+                    This is a simplified status guide based on the ticket's current status.
+                </p>
+            </section>
+
+            <section class="ticket-support-card">
+                <div class="support-card-icon">✧</div>
+                <h3>Need more help?</h3>
+                <p>
+                    If the suggested steps don't solve your issue, contact your
+                    support team or add details through your normal support process.
+                </p>
+                <a href="{{ url_for('tickets') }}" class="support-card-link">
+                    View all tickets <span>→</span>
+                </a>
+            </section>
+
+            <div class="ticket-navigation-links">
+                <a href="{{ url_for('tickets') }}">← My Tickets</a>
+
+                {% if current_user.role == "admin" %}
+                    <a href="{{ url_for('admin_dashboard') }}">← Admin Dashboard</a>
+                {% endif %}
+
+                <a href="{{ url_for('home') }}">← Dashboard</a>
+            </div>
+
+        </aside>
+
+    </div>
+</div>
+{% endblock %}
+```

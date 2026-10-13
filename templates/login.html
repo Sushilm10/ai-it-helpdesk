@@ -1,0 +1,74 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Sign In | Helix AI Helpdesk{% endblock %}
+
+{% block auth_content %}
+<div class="login-page">
+    <div class="login-decoration decoration-one"></div>
+    <div class="login-decoration decoration-two"></div>
+
+    <div class="login-brand">
+        <span class="brand-mark">A<span>i</span></span>
+        <span class="brand-copy">
+            <strong>Helix</strong>
+            <small>INTELLIGENT SUPPORT</small>
+        </span>
+    </div>
+
+    <div class="login-card">
+        <div class="login-icon">✦</div>
+
+        <p class="eyebrow">WELCOME BACK</p>
+        <h1>Sign in to your workspace</h1>
+        <p class="login-subtitle">
+            Your intelligent IT support hub is ready when you are.
+        </p>
+
+        <form method="POST" class="login-form">
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary login-submit">
+                Sign in to Helix <span>→</span>
+            </button>
+        </form>
+
+        <div class="login-divider">
+            <span>SECURE WORKSPACE ACCESS</span>
+        </div>
+
+        <p class="login-register">
+            New to Helix?
+            <a href="{{ url_for('register') }}">Create an account</a>
+        </p>
+    </div>
+
+    <div class="login-footer">
+        <span><span class="status-indicator"></span> AI-powered IT support</span>
+        <span>Built for better support experiences</span>
+    </div>
+</div>
+{% endblock %}
+```

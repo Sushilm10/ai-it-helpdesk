@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Create Ticket | Helix{% endblock %}
+{% block page_name %}Create ticket{% endblock %}
+
+{% block content %}
+<div class="create-ticket-page">
+
+    <div class="create-ticket-heading">
+        <div>
+            <a href="{{ url_for('home') }}" class="back-link">
+                <span>←</span> Back to dashboard
+            </a>
+            <p class="eyebrow">SUPPORT CENTRE / NEW REQUEST</p>
+            <h1>Create a support ticket</h1>
+            <p class="page-subtitle">
+                Tell us what's happening. Your support team will help you get back on track.
+            </p>
+        </div>
+
+        <div class="ticket-heading-icon">✦</div>
+    </div>
+
+    <div class="create-ticket-layout">
+
+        <section class="ticket-form-card">
+            <div class="ticket-form-header">
+                <div class="form-header-icon">▤</div>
+                <div>
+                    <h2>Issue details</h2>
+                    <p>Fields marked with * are required.</p>
+                </div>
+            </div>
+
+            <form method="POST" class="ticket-create-form">
+
+                <div class="form-group">
+                    <label for="title">Ticket title <span>*</span></label>
+                    <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        placeholder="e.g. Unable to connect to office Wi-Fi"
+                        maxlength="150"
+                        required
+                    >
+                    <small>Write a short, clear summary of your issue.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Describe your issue <span>*</span></label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        rows="7"
+                        placeholder="What happened? When did it start? Have you tried anything to fix it?"
+                        required
+                    ></textarea>
+                    <small>Include any error messages and troubleshooting steps you've already tried.</small>
+                </div>
+
+                <div class="ticket-form-row">
+                    <div class="form-group">
+                        <label for="category">Category <span>*</span></label>
+                        <select id="category" name="category" required>
+                            <option value="Hardware">Hardware</option>
+                            <option value="Software">Software</option>
+                            <option value="Network">Network</option>
+                            <option value="Access">Access</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority <span>*</span></label>
+                        <select id="priority" name="priority" required>
+                            <option value="Low">Low — Minor issue</option>
+                            <option value="Medium" selected>Medium — Normal</option>
+                            <option value="High">High — Work affected</option>
+                            <option value="Critical">Critical — Urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="priority-note">
+                    <span class="priority-note-icon">ⓘ</span>
+                    <p>
+                        Choose <strong>Critical</strong> only when the issue causes a
+                        major outage or prevents essential work.
+                    </p>
+                </div>
+
+                <div class="ticket-form-actions">
+                    <a href="{{ url_for('home') }}" class="cancel-button">Cancel</a>
+                    <button type="submit" class="submit-ticket-button">
+                        <span>＋</span> Submit ticket <span class="submit-arrow">→</span>
+                    </button>
+                </div>
+
+            </form>
+        </section>
+
+        <aside class="ticket-help-column">
+
+            <div class="ticket-ai-card">
+                <div class="ticket-ai-top">
+                    <span class="ticket-ai-symbol">✦</span>
+                    <span class="ticket-ai-label">HELIX AI ASSISTANT</span>
+                </div>
+
+                <h2>Let's solve this together.</h2>
+                <p>
+                    Helix can analyse your issue and suggest possible causes
+                    and troubleshooting steps after you submit your ticket.
+                </p>
+
+                <div class="ticket-ai-divider"></div>
+
+                <div class="ticket-ai-feature">
+                    <span>01</span>
+                    <div>
+                        <strong>Describe the problem</strong>
+                        <small>Give as much useful detail as possible.</small>
+                    </div>
+                </div>
+
+                <div class="ticket-ai-feature">
+                    <span>02</span>
+                    <div>
+                        <strong>AI analyses your issue</strong>
+                        <small>Receive suggested diagnosis and solutions if available.</small>
+                    </div>
+                </div>
+
+                <div class="ticket-ai-feature">
+                    <span>03</span>
+                    <div>
+                        <strong>Track your ticket</strong>
+                        <small>Check the status from your dashboard.</small>
+                    </div>
+                </div>
+
+                <div class="ticket-ai-footnote">
+                    AI-generated advice may not always be accurate. Follow your
+                    organisation's IT security policies.
+                </div>
+            </div>
+
+            <div class="ticket-tips-card">
+                <h3><span>✧</span> Tips for faster support</h3>
+                <ul>
+                    <li>Include the exact error message.</li>
+                    <li>Explain what you were doing when it happened.</li>
+                    <li>Mention whether the problem affects other users.</li>
+                    <li>Never include passwords or confidential credentials.</li>
+                </ul>
+            </div>
+
+        </aside>
+
+    </div>
+</div>
+{% endblock %}

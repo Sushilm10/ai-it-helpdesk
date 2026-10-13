@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Knowledge Base</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="admin-container">
+        <header class="admin-header">
+            <div>
+                <h1>IT Knowledge Base</h1>
+                <p>Verified troubleshooting guides for IT support.</p>
+            </div>
+            <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="GET" class="filter-form">
+            <input
+                type="search"
+                name="search"
+                placeholder="Search articles..."
+                value="{{ search }}"
+            >
+
+            <select name="category">
+                <option value="">All categories</option>
+                {% for item in categories %}
+                    <option value="{{ item }}"
+                        {% if selected_category == item %}selected{% endif %}>
+                        {{ item }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Search</button>
+            <a href="{{ url_for('knowledge_base') }}">Clear</a>
+        </form>
+
+        <p>
+            <a class="create-button" href="{{ url_for('create_article') }}">
+                + Add Article
+            </a>
+        </p>
+
+        <section class="tickets-section">
+            {% if articles %}
+                {% for article in articles %}
+                    <article style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <p><span class="category-badge">{{ article.category }}</span></p>
+                        <h2>{{ article.title }}</h2>
+                        <p style="white-space: pre-line;">{{ article.content }}</p>
+                        <small>
+                            Updated {{ article.updated_at.strftime("%d %b %Y") }}
+                        </small>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h3>No articles found</h3>
+                    <p>Add an article or try a different search.</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

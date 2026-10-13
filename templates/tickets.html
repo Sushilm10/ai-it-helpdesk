@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Tickets - AI IT Helpdesk</title>
+</head>
+
+<body>
+
+    <h1>My Support Tickets</h1>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <p>
+        <a href="{{ url_for('create_ticket') }}">
+            Create New Ticket
+        </a>
+    </p>
+
+    {% if tickets %}
+
+        {% for ticket in tickets %}
+
+            <hr>
+
+            <h2>
+                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                    #{{ ticket.id }} - {{ ticket.title }}
+                </a>
+            </h2>
+
+            <p>
+                <strong>Category:</strong>
+                {{ ticket.category }}
+            </p>
+
+            <p>
+                <strong>Priority:</strong>
+                {{ ticket.priority }}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                {{ ticket.status }}
+            </p>
+
+            <p>
+                Created:
+                {{ ticket.created_at.strftime("%d %B %Y, %I:%M %p") if ticket.created_at else "N/A" }}
+            </p>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            You don't have any support tickets yet.
+        </p>
+
+    {% endif %}
+
+    <p>
+        <a href="{{ url_for('home') }}">
+            Back to Dashboard
+        </a>
+    </p>
+
+</body>
+
+</html>

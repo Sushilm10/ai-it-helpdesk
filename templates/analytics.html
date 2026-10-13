@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helpdesk Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <main class="admin-container">
+        <header class="admin-header">
+            <div>
+                <h1>Helpdesk Analytics</h1>
+                <p>Monitor ticket trends and IT support workload.</p>
+            </div>
+            <a href="{{ url_for('admin_dashboard') }}">Back to Admin</a>
+        </header>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Total Tickets</span>
+                <strong class="stat-number">{{ total_tickets }}</strong>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Open Tickets</span>
+                <strong class="stat-number">{{ open_tickets }}</strong>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Resolved Tickets</span>
+                <strong class="stat-number">{{ resolved_tickets }}</strong>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">IT Agents</span>
+                <strong class="stat-number">{{ agent_count }}</strong>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <h3>Tickets by Status</h3>
+                <canvas id="statusChart"></canvas>
+            </div>
+
+            <div class="stat-card">
+                <h3>Tickets by Priority</h3>
+                <canvas id="priorityChart"></canvas>
+            </div>
+
+            <div class="stat-card">
+                <h3>Tickets by Category</h3>
+                <canvas id="categoryChart"></canvas>
+            </div>
+
+            <div class="stat-card">
+                <h3>Agent Workload</h3>
+                <canvas id="agentChart"></canvas>
+            </div>
+        </section>
+
+        <p><a href="{{ url_for('admin_dashboard') }}">← Back to Admin Dashboard</a></p>
+    </main>
+
+    <script>
+        const statusLabels = {{ status_labels | tojson }};
+        const statusValues = {{ status_values | tojson }};
+        const priorityLabels = {{ priority_labels | tojson }};
+        const priorityValues = {{ priority_values | tojson }};
+        const categoryLabels = {{ category_labels | tojson }};
+        const categoryValues = {{ category_values | tojson }};
+        const agentLabels = {{ agent_labels | tojson }};
+        const agentValues = {{ agent_values | tojson }};
+
+        new Chart(document.getElementById("statusChart"), {
+            type: "doughnut",
+            data: {
+                labels: statusLabels,
+                datasets: [{ label: "Tickets", data: statusValues }]
+            },
+            options: { responsive: true }
+        });
+
+        new Chart(document.getElementById("priorityChart"), {
+            type: "bar",
+            data: {
+                labels: priorityLabels,
+                datasets: [{ label: "Tickets", data: priorityValues }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+
+        new Chart(document.getElementById("categoryChart"), {
+            type: "pie",
+            data: {
+                labels: categoryLabels,
+                datasets: [{ label: "Tickets", data: categoryValues }]
+            },
+            options: { responsive: true }
+        });
+
+        new Chart(document.getElementById("agentChart"), {
+            type: "bar",
+            data: {
+                labels: agentLabels,
+                datasets: [{ label: "Assigned Tickets", data: agentValues }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    </script>
+</body>
+</html>
