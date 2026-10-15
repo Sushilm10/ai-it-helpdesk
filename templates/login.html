@@ -1,4 +1,3 @@
-```html
 {% extends "base.html" %}
 
 {% block title %}Sign In | Helix AI Helpdesk{% endblock %}
@@ -25,7 +24,7 @@
             Your intelligent IT support hub is ready when you are.
         </p>
 
-        <form method="POST" class="login-form">
+        <form method="POST" class="login-form" id="loginForm" novalidate>
             <div class="form-group">
                 <label for="email">Email address</label>
                 <input
@@ -36,22 +35,34 @@
                     autocomplete="email"
                     required
                 >
+                <span class="field-error" id="emailError"></span>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Enter your password"
-                    autocomplete="current-password"
-                    required
-                >
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                    <button type="button" class="password-toggle" aria-label="Show password" data-target="password">👁</button>
+                </div>
+                <span class="field-error" id="passwordError"></span>
             </div>
 
-            <button type="submit" class="btn btn-primary login-submit">
-                Sign in to Helix <span>→</span>
+            <div class="form-meta">
+                <a href="{{ url_for('forgot_password') }}" class="forgot-link">
+                    Forgot password?
+                </a>
+            </div>
+
+            <button type="submit" class="btn btn-primary login-submit" id="loginSubmit">
+                <span class="submit-label">Sign in to Helix <span>→</span></span>
+                <span class="submit-spinner" aria-hidden="true"></span>
             </button>
         </form>
 
@@ -71,4 +82,95 @@
     </div>
 </div>
 {% endblock %}
-```
+
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.getElementById("loginForm");
+        const email = document.getElementById("email");
+        const password = document.getElementById("password");
+        const emailError = document.getElementById("emailError");
+        const passwordError = document.getElementById("passwordError");
+        const submitBtn = document.getElementById("loginSubmit");
+
+        // Password visibility toggles
+        document.querySelectorAll(".password-toggle").forEach((toggle) => {
+            toggle.addEventListener("click", () => {
+                const field = document.getElementById(toggle.dataset.target);
+                const isPassword = field.type === "password";
+                field.type = isPassword ? "text" : "password";
+                toggle.textContent = isPassword ? "🙈" : "👁";
+                toggle.setAttribute(
+                    "aria-label",
+                    isPassword ? "Hide password" : "Show password"
+                );
+            });
+        });
+
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        function setError(input, errorEl, message) {
+            errorEl.textContent = message;
+            input.classList.toggle("input-invalid", Boolean(message));
+            input.setAttribute("aria-invalid", message ? "true" : "false");
+        }
+
+        function validateEmail() {
+            const value = email.value.trim();
+            if (!value) {
+                setError(email, emailError, "Email is required.");
+                return false;
+            }
+            if (!emailPattern.test(value)) {
+                setError(email, emailError, "Enter a valid email address.");
+                return false;
+            }
+            setError(email, emailError, "");
+            return true;
+        }
+
+        function validatePassword() {
+            if (!password.value) {
+                setError(password, passwordError, "Password is required.");
+                return false;
+            }
+            setError(password, passwordError, "");
+            return true;
+        }
+
+        email.addEventListener("blur", validateEmail);
+        email.addEventListener("input", () => {
+            if (email.classList.contains("input-invalid")) validateEmail();
+        });
+        password.addEventListener("blur", validatePassword);
+        password.addEventListener("input", () => {
+            if (password.classList.contains("input-invalid")) validatePassword();
+        });
+
+        form.addEventListener("submit", (event) => {
+            const okEmail = validateEmail();
+            const okPassword = validatePassword();
+
+            if (!okEmail || !okPassword) {
+                event.preventDefault();
+                (okEmail ? password : email).focus();
+                return;
+            }
+
+            // Show loading state while the request is processed.
+            submitBtn.classList.add("is-loading");
+            submitBtn.disabled = true;
+        });
+    })();
+</script>
+{% endblock %}
+
+</parameter>
+<task_progress>
+- [x] Review login.html and register.html
+- [ ] Add interactivity to login page
+- [ ] Add interactivity to register page
+- [ ] Add supporting CSS (toggle, strength meter, errors, spinner)
+- [ ] Verify changes
+</task_progress>
+</write_to_file>

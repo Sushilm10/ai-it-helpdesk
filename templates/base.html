@@ -89,19 +89,23 @@
                     </div>
                 </div>
 
-                <div class="profile-card">
+                <a href="{{ url_for('profile') }}" class="profile-card" title="Edit your profile">
                     <div class="avatar">
-                        {{ current_user.name[:1]|upper }}
+                        {% if current_user.avatar %}
+                            <img src="{{ url_for('uploaded_avatar', filename=current_user.avatar) }}" alt="{{ current_user.name }}">
+                        {% else %}
+                            {{ current_user.name[:1]|upper }}
+                        {% endif %}
                     </div>
                     <div class="profile-details">
                         <strong>{{ current_user.name }}</strong>
                         <small>{{ current_user.role|capitalize }}</small>
                     </div>
-                    <a href="{{ url_for('logout') }}"
-                       class="logout-link"
-                       title="Sign out"
-                       aria-label="Sign out">↗</a>
-                </div>
+                </a>
+                <a href="{{ url_for('logout') }}"
+                   class="logout-link"
+                   title="Sign out"
+                   aria-label="Sign out">↗</a>
             </div>
         </aside>
 
@@ -122,9 +126,19 @@
                         <span class="status-indicator"></span>
                         System ready
                     </span>
-                    <div class="topbar-avatar">
-                        {{ current_user.name[:1]|upper }}
-                    </div>
+                    <button type="button"
+                            class="about-badge"
+                            id="aboutBadge"
+                            title="About Helix"
+                            aria-label="About Helix"
+                            aria-haspopup="dialog">ⓘ</button>
+                    <a href="{{ url_for('profile') }}" class="topbar-avatar" title="Edit your profile">
+                        {% if current_user.avatar %}
+                            <img src="{{ url_for('uploaded_avatar', filename=current_user.avatar) }}" alt="{{ current_user.name }}">
+                        {% else %}
+                            {{ current_user.name[:1]|upper }}
+                        {% endif %}
+                    </a>
                 </div>
             </header>
 
@@ -175,6 +189,67 @@
         </div>
     {% endif %}
 
+    {% if current_user.is_authenticated %}
+    <div class="about-modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle" hidden>
+        <div class="about-modal-backdrop" data-about-close></div>
+        <div class="about-modal-card">
+            <button type="button" class="about-modal-close" data-about-close aria-label="Close">×</button>
+
+            <div class="about-modal-head">
+                <span class="about-modal-mark">A<span>i</span></span>
+                <div>
+                    <p class="about-modal-eyebrow">ABOUT THIS APP</p>
+                    <h2 id="aboutModalTitle">Helix — AI IT Helpdesk</h2>
+                </div>
+            </div>
+
+            <p class="about-modal-intro">
+                Helix is an intelligent IT support workspace that blends a smart
+                AI assistant with a clean helpdesk experience. Users raise tickets,
+                the AI analyses each issue and suggests likely causes and fixes,
+                while your support team tracks, assigns, and resolves everything in
+                one place.
+            </p>
+
+            <div class="about-modal-features">
+                <div class="about-feature">
+                    <span class="about-feature-icon">✦</span>
+                    <div>
+                        <strong>AI-powered analysis</strong>
+                        <small>Automatic diagnosis and suggested solutions for every ticket.</small>
+                    </div>
+                </div>
+                <div class="about-feature">
+                    <span class="about-feature-icon">▤</span>
+                    <div>
+                        <strong>Smart ticketing</strong>
+                        <small>Create, categorise, prioritise, and track support requests.</small>
+                    </div>
+                </div>
+                <div class="about-feature">
+                    <span class="about-feature-icon">♙</span>
+                    <div>
+                        <strong>Team collaboration</strong>
+                        <small>Assign tickets to agents and monitor their workload.</small>
+                    </div>
+                </div>
+                <div class="about-feature">
+                    <span class="about-feature-icon">◫</span>
+                    <div>
+                        <strong>Insightful analytics</strong>
+                        <small>Visual reports on status, priority, and team performance.</small>
+                    </div>
+                </div>
+            </div>
+
+            <p class="about-modal-footnote">
+                Intelligent support, simplified. AI suggestions may need verification
+                by your IT support team.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
     <script>
         const menuToggle = document.getElementById("menuToggle");
         const sidebar = document.getElementById("sidebar");
@@ -191,6 +266,38 @@
                 button.closest(".flash-message")?.remove();
             });
         });
+
+        // About modal
+        const aboutBadge = document.getElementById("aboutBadge");
+        const aboutModal = document.getElementById("aboutModal");
+
+        function openAboutModal() {
+            if (!aboutModal) return;
+            aboutModal.hidden = false;
+            document.body.classList.add("about-modal-open");
+            aboutModal.querySelector(".about-modal-close")?.focus();
+        }
+
+        function closeAboutModal() {
+            if (!aboutModal) return;
+            aboutModal.hidden = true;
+            document.body.classList.remove("about-modal-open");
+            aboutBadge?.focus();
+        }
+
+        if (aboutBadge && aboutModal) {
+            aboutBadge.addEventListener("click", openAboutModal);
+
+            aboutModal.querySelectorAll("[data-about-close]").forEach(el => {
+                el.addEventListener("click", closeAboutModal);
+            });
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && !aboutModal.hidden) {
+                    closeAboutModal();
+                }
+            });
+        }
     </script>
 
     {% block scripts %}{% endblock %}

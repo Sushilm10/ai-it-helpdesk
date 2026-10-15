@@ -1,6 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+import os
+import uuid
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from sqlalchemy import inspect, text, func
 from models import db, User, Ticket, KnowledgeArticle
 from ai_analyzer import analyze_ticket
@@ -15,6 +19,17 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 )
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Profile picture uploads
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads", "avatars")
+ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+MAX_AVATAR_SIZE = 2 * 1024 * 1024  # 2 MB
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = MAX_AVATAR_SIZE
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 db.init_app(app)
@@ -87,16 +102,144 @@ def ensure_user_role_column():
         db.session.commit()
 
 
+def ensure_user_avatar_column():
+    existing_columns = {
+        column["name"]
+        for column in inspect(db.engine).get_columns("user")
+    }
+
+    if "avatar" not in existing_columns:
+        db.session.execute(
+            text(
+                "ALTER TABLE user "
+                "ADD COLUMN avatar VARCHAR(255)"
+            )
+        )
+        db.session.commit()
+
+
 with app.app_context():
     db.create_all()
     ensure_user_role_column()
+    ensure_user_avatar_column()
     ensure_ticket_ai_columns()
     ensure_ticket_assigned_to_column()
 
 
+def allowed_avatar_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_AVATAR_EXTENSIONS
+    )
+
+
+def save_avatar(file_storage):
+    """Validate and store an uploaded avatar, returning its filename.
+
+    Returns a tuple of (filename, error_message). On success the error
+    message is None; on failure the filename is None.
+    """
+    if not file_storage or file_storage.filename == "":
+        return None, None
+
+    original_name = secure_filename(file_storage.filename)
+
+    if not allowed_avatar_file(original_name):
+        return None, "Profile picture must be a PNG, JPG, JPEG, GIF, or WEBP image."
+
+    extension = original_name.rsplit(".", 1)[1].lower()
+    unique_name = f"{uuid.uuid4().hex}.{extension}"
+    destination = os.path.join(UPLOAD_FOLDER, unique_name)
+    file_storage.save(destination)
+
+    return unique_name, None
+
+
+def remove_avatar(filename):
+    """Delete a previously stored avatar file if it exists."""
+    if not filename:
+        return
+    try:
+        os.remove(os.path.join(UPLOAD_FOLDER, filename))
+    except OSError:
+        pass
+
+
+@app.route("/uploads/avatars/<path:filename>")
+def uploaded_avatar(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+def get_agents_with_stats():
+    """Return all IT agents with a summary of their assigned tickets."""
+    agents = User.query.filter_by(role="agent").order_by(
+        User.name.asc()
+    ).all()
+
+    team = []
+    for agent in agents:
+        assigned = Ticket.query.filter_by(assigned_to=agent.id).all()
+        active = sum(
+            1 for t in assigned if t.status in ("Open", "In Progress")
+        )
+        resolved = sum(
+            1 for t in assigned if t.status in ("Resolved", "Closed")
+        )
+        team.append({
+            "id": agent.id,
+            "name": agent.name,
+            "email": agent.email,
+            "avatar": agent.avatar,
+            "total": len(assigned),
+            "active": active,
+            "resolved": resolved,
+        })
+
+    return team
+
+
+def get_users_with_stats():
+    """Return all regular users with a summary of their tickets."""
+    users = User.query.filter_by(role="user").order_by(
+        User.name.asc()
+    ).all()
+
+    people = []
+    for user in users:
+        tickets = Ticket.query.filter_by(user_id=user.id).all()
+        active = sum(
+            1 for t in tickets if t.status in ("Open", "In Progress")
+        )
+        resolved = sum(
+            1 for t in tickets if t.status in ("Resolved", "Closed")
+        )
+        people.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "avatar": user.avatar,
+            "total": len(tickets),
+            "active": active,
+            "resolved": resolved,
+        })
+
+    return people
+
+
 @app.route("/")
+@login_required
 def home():
-    return render_template("dashboard.html")
+    user_tickets = Ticket.query.filter_by(
+        user_id=current_user.id
+    ).order_by(
+        Ticket.created_at.desc()
+    ).all()
+
+    return render_template(
+        "dashboard.html",
+        tickets=user_tickets,
+        team=get_agents_with_stats()
+    )
 
 
 @app.route("/admin/agents/create", methods=["GET", "POST"])
@@ -126,11 +269,20 @@ def create_agent():
             flash("An account with this email already exists.")
             return redirect(url_for("create_agent"))
 
+        avatar_filename, avatar_error = save_avatar(
+            request.files.get("avatar")
+        )
+
+        if avatar_error:
+            flash(avatar_error)
+            return redirect(url_for("create_agent"))
+
         agent = User(
             name=name,
             email=email,
             password=generate_password_hash(password),
-            role="agent"
+            role="agent",
+            avatar=avatar_filename
         )
 
         db.session.add(agent)
@@ -140,6 +292,43 @@ def create_agent():
         return redirect(url_for("admin_dashboard"))
 
     return render_template("create_agent.html")
+
+
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+
+        if action == "remove_avatar":
+            remove_avatar(current_user.avatar)
+            current_user.avatar = None
+            db.session.commit()
+            flash("Profile picture removed.")
+            return redirect(url_for("profile"))
+
+        avatar_file = request.files.get("avatar")
+
+        if not avatar_file or avatar_file.filename == "":
+            flash("Please choose an image to upload.")
+            return redirect(url_for("profile"))
+
+        avatar_filename, avatar_error = save_avatar(avatar_file)
+
+        if avatar_error:
+            flash(avatar_error)
+            return redirect(url_for("profile"))
+
+        # Replace any previous avatar file.
+        remove_avatar(current_user.avatar)
+        current_user.avatar = avatar_filename
+        db.session.commit()
+
+        flash("Profile picture updated.")
+        return redirect(url_for("profile"))
+
+    return render_template("profile.html")
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -210,6 +399,91 @@ def login():
         flash("Invalid email or password.")
 
     return render_template("login.html")
+
+
+def get_reset_serializer():
+    return URLSafeTimedSerializer(
+        app.config["SECRET_KEY"],
+        salt="password-reset",
+    )
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+
+    # Already signed-in users don't need to reset a password.
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
+
+    reset_url = None
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Please enter your email address.")
+            return redirect(url_for("forgot_password"))
+
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            token = get_reset_serializer().dumps(user.email)
+            reset_url = url_for(
+                "reset_password",
+                token=token,
+                _external=True,
+            )
+            flash("Reset link generated for your account.")
+        else:
+            # Do not reveal whether an account exists.
+            flash("Reset link generated for your account.")
+
+    return render_template(
+        "forgot_password.html",
+        reset_url=reset_url,
+    )
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
+
+    try:
+        email = get_reset_serializer().loads(
+            token,
+            max_age=3600,  # link valid for 1 hour
+        )
+    except (SignatureExpired, BadSignature):
+        flash("This reset link is invalid or has expired.")
+        return redirect(url_for("forgot_password"))
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        flash("This reset link is invalid or has expired.")
+        return redirect(url_for("forgot_password"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.")
+            return render_template("reset_password.html", token=token)
+
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return render_template("reset_password.html", token=token)
+
+        user.password = generate_password_hash(password)
+        db.session.commit()
+
+        flash("Your password has been reset. Please sign in.")
+        return redirect(url_for("login"))
+
+    return render_template("reset_password.html", token=token)
 
 @app.route("/tickets/create", methods=["GET", "POST"])
 @login_required
@@ -312,6 +586,13 @@ def tickets():
         tickets=user_tickets
     )
 
+def staff_dashboard_url():
+    """Return the correct dashboard for the current staff member."""
+    if current_user.role == "agent":
+        return url_for("agent_dashboard")
+    return url_for("admin_dashboard")
+
+
 @app.route("/tickets/<int:ticket_id>")
 @login_required
 def ticket_detail(ticket_id):
@@ -319,8 +600,11 @@ def ticket_detail(ticket_id):
     ticket = db.get_or_404(Ticket, ticket_id)
 
     # Normal users can only view their own tickets.
-    # Admins can view all tickets.
-    if ticket.user_id != current_user.id and current_user.role != "admin":
+    # Admins and agents can view all tickets.
+    if (
+        ticket.user_id != current_user.id
+        and current_user.role not in ("admin", "agent")
+    ):
         flash("You are not authorised to view this ticket.")
         return redirect(url_for("tickets"))
 
@@ -334,7 +618,7 @@ def ticket_detail(ticket_id):
 @login_required
 def update_ticket_status(ticket_id):
 
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "agent"):
         flash("You are not authorised to perform this action.")
         return redirect(url_for("home"))
 
@@ -351,7 +635,7 @@ def update_ticket_status(ticket_id):
 
     if new_status not in allowed_statuses:
         flash("Invalid ticket status.")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(staff_dashboard_url())
 
     ticket.status = new_status
 
@@ -361,13 +645,13 @@ def update_ticket_status(ticket_id):
         f"Ticket #{ticket.id} status updated to {new_status}."
     )
 
-    return redirect(url_for("admin_dashboard"))
+    return redirect(staff_dashboard_url())
 
 @app.route("/admin/tickets/<int:ticket_id>/assign", methods=["POST"])
 @login_required
 def assign_ticket(ticket_id):
 
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "agent"):
         flash("You are not authorised to assign tickets.")
         return redirect(url_for("home"))
 
@@ -382,7 +666,7 @@ def assign_ticket(ticket_id):
             agent_id = int(agent_id)
         except ValueError:
             flash("Invalid agent selection.")
-            return redirect(url_for("admin_dashboard"))
+            return redirect(staff_dashboard_url())
 
         agent = User.query.filter_by(
             id=agent_id,
@@ -391,14 +675,14 @@ def assign_ticket(ticket_id):
 
         if not agent:
             flash("Selected IT agent does not exist.")
-            return redirect(url_for("admin_dashboard"))
+            return redirect(staff_dashboard_url())
 
         ticket.assigned_to = agent.id
 
     db.session.commit()
 
     flash(f"Ticket #{ticket.id} assignment updated.")
-    return redirect(url_for("admin_dashboard"))
+    return redirect(staff_dashboard_url())
 
 
 @app.route("/agent/tickets/<int:ticket_id>/status", methods=["POST"])
@@ -432,6 +716,67 @@ def agent_update_ticket_status(ticket_id):
 
     flash(f"Ticket #{ticket.id} updated to {new_status}.")
     return redirect(url_for("agent_dashboard"))
+
+
+@app.route("/agent")
+@login_required
+def agent_dashboard():
+
+    if current_user.role != "agent":
+        flash("You are not authorised to access the agent dashboard.")
+        return redirect(url_for("home"))
+
+    search = request.args.get("search", "").strip()
+    status = request.args.get("status", "")
+    priority = request.args.get("priority", "")
+    agent_id = request.args.get("agent_id", "")
+
+    query = Ticket.query
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Ticket.title.ilike(search_term),
+                Ticket.description.ilike(search_term)
+            )
+        )
+
+    if status in ["Open", "In Progress", "Resolved", "Closed"]:
+        query = query.filter_by(status=status)
+
+    if priority in ["Low", "Medium", "High", "Critical"]:
+        query = query.filter_by(priority=priority)
+
+    if agent_id == "unassigned":
+        query = query.filter(Ticket.assigned_to.is_(None))
+    elif agent_id.isdigit():
+        query = query.filter_by(assigned_to=int(agent_id))
+
+    all_tickets = query.order_by(
+        Ticket.created_at.desc()
+    ).all()
+
+    agents = User.query.filter_by(role="agent").order_by(
+        User.name.asc()
+    ).all()
+
+    return render_template(
+        "agent_dashboard.html",
+        tickets=all_tickets,
+        total_tickets=Ticket.query.count(),
+        open_tickets=Ticket.query.filter_by(status="Open").count(),
+        high_priority=Ticket.query.filter(
+            Ticket.priority.in_(["High", "Critical"])
+        ).count(),
+        resolved_tickets=Ticket.query.filter_by(status="Resolved").count(),
+        agents=agents,
+        users=get_users_with_stats(),
+        search=search,
+        selected_status=status,
+        selected_priority=priority,
+        selected_agent_id=agent_id
+    )
 
 
 @app.route("/admin")
@@ -487,6 +832,8 @@ def admin_dashboard():
         ).count(),
         resolved_tickets=Ticket.query.filter_by(status="Resolved").count(),
         agents=agents,
+        team=get_agents_with_stats(),
+        users=get_users_with_stats(),
         search=search,
         selected_status=status,
         selected_priority=priority,
@@ -639,7 +986,9 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Port 5000 is often occupied on macOS by "AirPlay Receiver".
+    # Use 5001 to avoid the conflict.
+    app.run(debug=True, port=5001)
 
 
 #./venv/bin/python -c "from app import app, db; from models import User; app.app_context().push(); u = User.query.filter_by(email='sushilbhurtel21@gmail.com').first(); u.role = 'admin'; db.session.commit(); print(f'{sushilbhurtel21@gmail.com} is now an admin.')"

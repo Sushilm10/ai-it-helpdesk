@@ -39,6 +39,11 @@ class User(UserMixin, db.Model):
         nullable=False
     )
 
+    avatar = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=utc_now

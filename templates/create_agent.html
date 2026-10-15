@@ -1,45 +1,241 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create IT Agent</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <main class="admin-container">
-        <h1>Create IT Agent</h1>
-        <p>Create an account for an IT support team member.</p>
+{% block title %}Create IT Agent | Helix{% endblock %}
+{% block page_name %}Team members{% endblock %}
 
-        {% with messages = get_flashed_messages() %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endwith %}
+{% block content %}
+<div class="create-ticket-page">
 
-        <form method="POST">
-            <p>
-                <label for="name">Full name</label><br>
-                <input id="name" type="text" name="name" required>
+    <div class="create-ticket-heading">
+        <div>
+            <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back to overview</a>
+            <p class="eyebrow">TEAM MANAGEMENT</p>
+            <h1>Create IT agent</h1>
+            <p class="page-subtitle">
+                Add a support team member and optionally give them a profile picture.
             </p>
+        </div>
+        <div class="ticket-heading-icon">♙</div>
+    </div>
 
-            <p>
-                <label for="email">Email address</label><br>
-                <input id="email" type="email" name="email" required>
-            </p>
+    <div class="create-ticket-layout">
+        <div class="ticket-form-card">
+            <div class="ticket-form-header">
+                <div class="form-header-icon">＋</div>
+                <div>
+                    <h2>Agent details</h2>
+                    <p>Set up the account for your new IT agent.</p>
+                </div>
+            </div>
 
-            <p>
-                <label for="password">Temporary password (minimum 8 characters)</label><br>
-                <input id="password" type="password" name="password" minlength="8" required>
-            </p>
+            <form method="POST" enctype="multipart/form-data" class="ticket-create-form" id="createAgentForm" novalidate>
+                <div class="form-group">
+                    <label for="name">Full name <span>*</span></label>
+                    <input type="text" id="name" name="name" placeholder="Jane Doe" required>
+                    <span class="field-error" id="nameError"></span>
+                </div>
 
-            <button type="submit">Create Agent Account</button>
-        </form>
+                <div class="form-group">
+                    <label for="email">Email address <span>*</span></label>
+                    <input type="email" id="email" name="email" placeholder="agent@example.com" required>
+                    <span class="field-error" id="emailError"></span>
+                </div>
 
-        <p>
-            <a href="{{ url_for('admin_dashboard') }}">Back to Admin Dashboard</a>
-        </p>
-    </main>
-</body>
-</html>
+                <div class="form-group">
+                    <label for="password">Temporary password <span>*</span></label>
+                    <input type="password" id="password" name="password" placeholder="Minimum 8 characters" minlength="8" required>
+                    <small>The agent can change this after signing in.</small>
+                    <span class="field-error" id="passwordError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="avatar">Profile picture</label>
+                    <div class="avatar-upload">
+                        <div class="avatar-preview" id="avatarPreview">
+                            <span class="avatar-preview-initial">♙</span>
+                        </div>
+                        <div class="avatar-upload-controls">
+                            <label for="avatar" class="avatar-upload-button">Choose image</label>
+                            <input type="file" id="avatar" name="avatar" accept="image/*" hidden>
+                            <small>PNG, JPG, JPEG, GIF, or WEBP. Max 2 MB.</small>
+                            <span class="field-error" id="avatarError"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ticket-form-actions">
+                    <a href="{{ url_for('admin_dashboard') }}" class="cancel-button">Cancel</a>
+                    <button type="submit" class="submit-ticket-button">
+                        Create agent <span class="submit-arrow">→</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <aside class="ticket-help-column">
+            <div class="ticket-ai-card">
+                <div class="ticket-ai-top">
+                    <span class="ticket-ai-symbol">✦</span>
+                    <span class="ticket-ai-label">TEAM TIPS</span>
+                </div>
+                <h2>Building your support team</h2>
+                <p>
+                    Agents can be assigned tickets and update their status from their workspace.
+                </p>
+                <div class="ticket-ai-divider"></div>
+                <div class="ticket-ai-feature">
+                    <span>1</span>
+                    <div>
+                        <strong>Assign tickets</strong>
+                        <small>Route requests to the right agent.</small>
+                    </div>
+                </div>
+                <div class="ticket-ai-feature">
+                    <span>2</span>
+                    <div>
+                        <strong>Track workload</strong>
+                        <small>See each agent's active and resolved tickets.</small>
+                    </div>
+                </div>
+                <div class="ticket-ai-feature">
+                    <span>3</span>
+                    <div>
+                        <strong>Profile pictures</strong>
+                        <small>Help members recognise each other.</small>
+                    </div>
+                </div>
+                <p class="ticket-ai-footnote">
+                    Agents can update their own profile picture anytime from their profile page.
+                </p>
+            </div>
+        </aside>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.getElementById("createAgentForm");
+        const name = document.getElementById("name");
+        const email = document.getElementById("email");
+        const password = document.getElementById("password");
+        const avatar = document.getElementById("avatar");
+        const nameError = document.getElementById("nameError");
+        const emailError = document.getElementById("emailError");
+        const passwordError = document.getElementById("passwordError");
+        const avatarError = document.getElementById("avatarError");
+        const avatarPreview = document.getElementById("avatarPreview");
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const allowedExtensions = ["png", "jpg", "jpeg", "gif", "webp"];
+        const maxSize = 2 * 1024 * 1024;
+
+        function setError(input, errorEl, message) {
+            errorEl.textContent = message;
+            input.classList.toggle("input-invalid", Boolean(message));
+        }
+
+        function validateName() {
+            if (name.value.trim().length < 2) {
+                setError(name, nameError, "Please enter the agent's name.");
+                return false;
+            }
+            setError(name, nameError, "");
+            return true;
+        }
+
+        function validateEmail() {
+            const value = email.value.trim();
+            if (!value) {
+                setError(email, emailError, "Email is required.");
+                return false;
+            }
+            if (!emailPattern.test(value)) {
+                setError(email, emailError, "Enter a valid email address.");
+                return false;
+            }
+            setError(email, emailError, "");
+            return true;
+        }
+
+        function validatePassword() {
+            if (password.value.length < 8) {
+                setError(password, passwordError, "Use at least 8 characters.");
+                return false;
+            }
+            setError(password, passwordError, "");
+            return true;
+        }
+
+        function validateAvatar() {
+            if (!avatar.files.length) {
+                setError(avatar, avatarError, "");
+                return true;
+            }
+            const file = avatar.files[0];
+            const ext = file.name.split(".").pop().toLowerCase();
+            if (!allowedExtensions.includes(ext)) {
+                setError(avatar, avatarError, "Use a PNG, JPG, JPEG, GIF, or WEBP image.");
+                return false;
+            }
+            if (file.size > maxSize) {
+                setError(avatar, avatarError, "Image must be smaller than 2 MB.");
+                return false;
+            }
+            setError(avatar, avatarError, "");
+            return true;
+        }
+
+        // Live preview of the selected image
+        avatar.addEventListener("change", () => {
+            validateAvatar();
+            const file = avatar.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    avatarPreview.innerHTML =
+                        `<img src="${e.target.result}" alt="Profile preview">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                avatarPreview.innerHTML =
+                    '<span class="avatar-preview-initial">♙</span>';
+            }
+        });
+
+        name.addEventListener("blur", validateName);
+        email.addEventListener("blur", validateEmail);
+        password.addEventListener("blur", validatePassword);
+
+        form.addEventListener("submit", (event) => {
+            const okName = validateName();
+            const okEmail = validateEmail();
+            const okPassword = validatePassword();
+            const okAvatar = validateAvatar();
+
+            if (!okName || !okEmail || !okPassword || !okAvatar) {
+                event.preventDefault();
+                const firstInvalid = [name, email, password, avatar].find(
+                    (field) => field.classList.contains("input-invalid")
+                );
+                if (firstInvalid) firstInvalid.focus();
+            }
+        });
+    })();
+</script>
+{% endblock %}
+
+</parameter>
+<task_progress>
+- [x] Review models.py, create_agent.html, base.html
+- [x] Add avatar column to User model
+- [x] Add upload config + migration + helper
+- [x] Add upload handling to create_agent route
+- [ ] Add profile picture upload form to create_agent.html
+- [ ] Add agent self-service profile picture page/route
+- [ ] Display avatar in sidebar, dashboards, agent cards
+- [ ] Add supporting CSS
+- [ ] Verify changes
+</task_progress>
+</write_to_file>

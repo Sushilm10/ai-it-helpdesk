@@ -1,93 +1,340 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Agent Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <main class="admin-container">
-        <header class="admin-header">
-            <div>
-                <h1>IT Agent Dashboard</h1>
-                <p>Welcome, {{ current_user.name }}</p>
+{% block title %}Agent Overview | Helix{% endblock %}
+{% block page_name %}Overview{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+
+    <section class="welcome-section">
+        <div>
+            <p class="eyebrow">AGENT WORKSPACE</p>
+            <h1>Support overview</h1>
+            <p class="page-subtitle">
+                Monitor, assign, and resolve every support request across the workspace.
+            </p>
+        </div>
+
+        <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+            <span>＋</span> New ticket
+        </a>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">TOTAL TICKETS</span>
+                <span class="stat-icon purple">▤</span>
             </div>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </header>
+            <div class="stat-value">{{ total_tickets }}</div>
+            <p class="stat-caption">All support requests</p>
+        </div>
 
-        {% with messages = get_flashed_messages() %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">OPEN TICKETS</span>
+                <span class="stat-icon blue">◷</span>
+            </div>
+            <div class="stat-value">{{ open_tickets }}</div>
+            <p class="stat-caption">Awaiting resolution</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">HIGH PRIORITY</span>
+                <span class="stat-icon orange">▲</span>
+            </div>
+            <div class="stat-value">{{ high_priority }}</div>
+            <p class="stat-caption">High & critical urgency</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">RESOLVED</span>
+                <span class="stat-icon green">✓</span>
+            </div>
+            <div class="stat-value">{{ resolved_tickets }}</div>
+            <p class="stat-caption">Successfully completed</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Support tickets</h2>
+                <p>Manage and monitor all support requests.</p>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ url_for('agent_dashboard') }}" class="admin-filters">
+            <div class="form-group">
+                <label for="search">Search</label>
+                <input
+                    type="search"
+                    id="search"
+                    name="search"
+                    placeholder="Search title or description..."
+                    value="{{ search }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="">All statuses</option>
+                    {% for option in ["Open", "In Progress", "Resolved", "Closed"] %}
+                        <option value="{{ option }}"
+                            {% if selected_status == option %}selected{% endif %}>
+                            {{ option }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="priority">Priority</label>
+                <select id="priority" name="priority">
+                    <option value="">All priorities</option>
+                    {% for option in ["Low", "Medium", "High", "Critical"] %}
+                        <option value="{{ option }}"
+                            {% if selected_priority == option %}selected{% endif %}>
+                            {{ option }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="agent_id">Agent</label>
+                <select id="agent_id" name="agent_id">
+                    <option value="">All agents</option>
+                    <option value="unassigned"
+                        {% if selected_agent_id == "unassigned" %}selected{% endif %}>
+                        Unassigned
+                    </option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}"
+                            {% if selected_agent_id == agent.id|string %}selected{% endif %}>
+                            {{ agent.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="admin-filters-actions">
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="{{ url_for('agent_dashboard') }}" class="btn btn-secondary">Clear</a>
+            </div>
+        </form>
+
+        {% if tickets %}
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>User</th>
+                        <th>Assigned agent</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>AI</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>
+                            <a class="ticket-number" href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                                #{{ ticket.id }}
+                            </a>
+                            <div class="ticket-subject">
+                                <strong>{{ ticket.title }}</strong>
+                            </div>
+                        </td>
+
+                        <td>{{ ticket.user.name }}</td>
+
+                        <td>
+                            <form method="POST"
+                                  action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}">
+                                <select name="assigned_to"
+                                        onchange="this.form.submit()"
+                                        class="table-select">
+                                    <option value="">Unassigned</option>
+                                    {% for agent in agents %}
+                                        <option value="{{ agent.id }}"
+                                            {% if ticket.assigned_to == agent.id %}selected{% endif %}>
+                                            {{ agent.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            <span class="category-badge">{{ ticket.category }}</span>
+                        </td>
+
+                        <td>
+                            <span class="priority-label priority-{{ ticket.priority|lower }}">
+                                {{ ticket.priority }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <form method="POST"
+                                  action="{{ url_for('update_ticket_status', ticket_id=ticket.id) }}">
+                                <select name="status"
+                                        onchange="this.form.submit()"
+                                        class="table-select">
+                                    {% for option in ["Open", "In Progress", "Resolved", "Closed"] %}
+                                        <option value="{{ option }}"
+                                            {% if ticket.status == option %}selected{% endif %}>
+                                            {{ option }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            {% if ticket.ai_analyzed %}
+                                <span class="status-badge status-resolved">
+                                    <span class="badge-dot"></span> Analyzed
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-open">
+                                    <span class="badge-dot"></span> Pending
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+            <div class="empty-icon">▤</div>
+            <h3>No tickets found</h3>
+            <p>
+                {% if search or selected_status or selected_priority or selected_agent_id %}
+                    No tickets match your current filters. Try clearing them.
+                {% else %}
+                    Support tickets will appear here as they are created.
+                {% endif %}
+            </p>
+        </div>
+
+        {% endif %}
+    </section>
+
+    <section class="panel team-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Support team</h2>
+                <p>IT agents and their current workload.</p>
+            </div>
+        </div>
+
+        {% if agents %}
+        <div class="team-grid">
+            {% for agent in agents %}
+            <div class="agent-card">
+                <div class="agent-avatar">
+                    {% if agent.avatar %}
+                        <img src="{{ url_for('uploaded_avatar', filename=agent.avatar) }}" alt="{{ agent.name }}">
+                    {% else %}
+                        {{ agent.name[:1]|upper }}
+                    {% endif %}
+                </div>
+                <div class="agent-info">
+                    <strong>{{ agent.name }}</strong>
+                    <small>{{ agent.email }}</small>
+                </div>
+            </div>
             {% endfor %}
-        {% endwith %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">♙</div>
+            <h3>No agents yet</h3>
+            <p>IT agents will appear here once they join your workspace.</p>
+        </div>
+        {% endif %}
+    </section>
 
-        <section class="tickets-section">
-            <h2>My Assigned Tickets</h2>
+    <section class="panel team-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Users</h2>
+                <p>Workspace members and their support requests.</p>
+            </div>
+        </div>
 
-            {% if tickets %}
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Category</th>
-                                <th>Priority</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ticket in tickets %}
-                                <tr>
-                                    <td>
-                                        <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
-                                            #{{ ticket.id }} - {{ ticket.title }}
-                                        </a>
-                                    </td>
-                                    <td>{{ ticket.category }}</td>
-                                    <td>{{ ticket.priority }}</td>
-                                    <td>
-                                        <form
-                                            method="POST"
-                                            action="{{ url_for('agent_update_ticket_status', ticket_id=ticket.id) }}"
-                                        >
-                                            <select
-                                                name="status"
-                                                class="status-select"
-                                                onchange="this.form.submit()"
-                                            >
-                                                <option value="Open"
-                                                    {% if ticket.status == "Open" %}selected{% endif %}>
-                                                    Open
-                                                </option>
-
-                                                <option value="In Progress"
-                                                    {% if ticket.status == "In Progress" %}selected{% endif %}>
-                                                    In Progress
-                                                </option>
-
-                                                <option value="Resolved"
-                                                    {% if ticket.status == "Resolved" %}selected{% endif %}>
-                                                    Resolved
-                                                </option>
-                                            </select>
-                                        </form>
-                                    </td>
-                                    <td>{{ ticket.created_at.strftime("%d %b %Y") }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        {% if users %}
+        <div class="team-grid">
+            {% for member in users %}
+            <div class="agent-card">
+                <div class="agent-avatar agent-avatar-user">
+                    {% if member.avatar %}
+                        <img src="{{ url_for('uploaded_avatar', filename=member.avatar) }}" alt="{{ member.name }}">
+                    {% else %}
+                        {{ member.name[:1]|upper }}
+                    {% endif %}
                 </div>
-            {% else %}
-                <div class="empty-state">
-                    <h3>No tickets assigned yet</h3>
-                    <p>Tickets assigned to you will appear here.</p>
+                <div class="agent-info">
+                    <strong>{{ member.name }}</strong>
+                    <small>{{ member.email }}</small>
                 </div>
-            {% endif %}
-        </section>
-    </main>
-</body>
-</html>
+                <div class="agent-stats">
+                    <span class="agent-stat">
+                        <em>{{ member.active }}</em> active
+                    </span>
+                    <span class="agent-stat">
+                        <em>{{ member.resolved }}</em> resolved
+                    </span>
+                    <span class="agent-stat agent-stat-total">
+                        <em>{{ member.total }}</em> total
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">♟</div>
+            <h3>No users yet</h3>
+            <p>Registered workspace members will appear here.</p>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+</parameter>
+<task_progress>
+- [x] Analyze admin dashboard structure
+- [x] Analyze agent dashboard structure
+- [x] Analyze app.py routes for both dashboards
+- [x] Analyze base.html
+- [x] Analyze models.py
+- [x] Analyze tests
+- [x] Verify CSS classes exist
+- [ ] Rewrite agent_dashboard.html to match admin dashboard
+- [ ] Update agent_dashboard route to provide full context
+- [ ] Allow agents to assign/update status and view all tickets
+- [ ] Verify changes
+</task_progress>
+</write_to_file>

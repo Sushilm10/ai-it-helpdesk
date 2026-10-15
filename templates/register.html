@@ -1,73 +1,285 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block title %}Create Account | Helix AI Helpdesk{% endblock %}
 
-    <title>Create Account - AI IT Helpdesk</title>
-</head>
+{% block auth_content %}
+<div class="login-page">
+    <div class="login-decoration decoration-one"></div>
+    <div class="login-decoration decoration-two"></div>
 
-<body>
+    <div class="login-brand">
+        <span class="brand-mark">A<span>i</span></span>
+        <span class="brand-copy">
+            <strong>Helix</strong>
+            <small>INTELLIGENT SUPPORT</small>
+        </span>
+    </div>
 
-    <h1>Create Account</h1>
+    <div class="login-card">
+        <div class="login-icon">✦</div>
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+        <p class="eyebrow">GET STARTED</p>
+        <h1>Create your account</h1>
+        <p class="login-subtitle">
+            Join Helix and get intelligent IT support at your fingertips.
+        </p>
 
-    <form method="POST">
+        <form method="POST" class="login-form" id="registerForm" novalidate>
+            <div class="form-group">
+                <label for="name">Full name</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    placeholder="Jane Doe"
+                    autocomplete="name"
+                    required
+                >
+                <span class="field-error" id="nameError"></span>
+            </div>
 
-        <label>Name</label>
-        <br>
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    required
+                >
+                <span class="field-error" id="emailError"></span>
+            </div>
 
-        <input
-            type="text"
-            name="name"
-            required
-        >
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Create a password"
+                        autocomplete="new-password"
+                        required
+                    >
+                    <button type="button" class="password-toggle" aria-label="Show password" data-target="password">👁</button>
+                </div>
+                <div class="strength-meter" id="strengthMeter" aria-hidden="true">
+                    <div class="strength-bar"><span id="strengthFill"></span></div>
+                    <span class="strength-label" id="strengthLabel"></span>
+                </div>
+                <span class="field-error" id="passwordError"></span>
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label for="confirm_password">Confirm password</label>
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="confirm_password"
+                        name="confirm_password"
+                        placeholder="Re-enter your password"
+                        autocomplete="new-password"
+                        required
+                    >
+                    <button type="button" class="password-toggle" aria-label="Show password" data-target="confirm_password">👁</button>
+                </div>
+                <span class="field-error" id="confirmError"></span>
+            </div>
 
-        <label>Email</label>
-        <br>
+            <button type="submit" class="btn btn-primary login-submit" id="registerSubmit">
+                <span class="submit-label">Create account <span>→</span></span>
+                <span class="submit-spinner" aria-hidden="true"></span>
+            </button>
+        </form>
 
-        <input
-            type="email"
-            name="email"
-            required
-        >
+        <div class="login-divider">
+            <span>SECURE WORKSPACE ACCESS</span>
+        </div>
 
-        <br><br>
+        <p class="login-register">
+            Already have an account?
+            <a href="{{ url_for('login') }}">Sign in</a>
+        </p>
+    </div>
 
-        <label>Password</label>
-        <br>
+    <div class="login-footer">
+        <span><span class="status-indicator"></span> AI-powered IT support</span>
+        <span>Built for better support experiences</span>
+    </div>
+</div>
+{% endblock %}
 
-        <input
-            type="password"
-            name="password"
-            required
-        >
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.getElementById("registerForm");
+        const name = document.getElementById("name");
+        const email = document.getElementById("email");
+        const password = document.getElementById("password");
+        const confirmPassword = document.getElementById("confirm_password");
+        const nameError = document.getElementById("nameError");
+        const emailError = document.getElementById("emailError");
+        const passwordError = document.getElementById("passwordError");
+        const confirmError = document.getElementById("confirmError");
+        const strengthMeter = document.getElementById("strengthMeter");
+        const strengthFill = document.getElementById("strengthFill");
+        const strengthLabel = document.getElementById("strengthLabel");
+        const submitBtn = document.getElementById("registerSubmit");
 
-        <br><br>
+        // Password visibility toggles
+        document.querySelectorAll(".password-toggle").forEach((toggle) => {
+            toggle.addEventListener("click", () => {
+                const field = document.getElementById(toggle.dataset.target);
+                const isPassword = field.type === "password";
+                field.type = isPassword ? "text" : "password";
+                toggle.textContent = isPassword ? "🙈" : "👁";
+                toggle.setAttribute(
+                    "aria-label",
+                    isPassword ? "Hide password" : "Show password"
+                );
+            });
+        });
 
-        <button type="submit">
-            Create Account
-        </button>
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    </form>
+        function setError(input, errorEl, message) {
+            errorEl.textContent = message;
+            input.classList.toggle("input-invalid", Boolean(message));
+            input.setAttribute("aria-invalid", message ? "true" : "false");
+        }
 
-    <p>
-        Already have an account?
-        <a href="{{ url_for('login') }}">
-            Login
-        </a>
-    </p>
+        function validateName() {
+            const value = name.value.trim();
+            if (value.length < 2) {
+                setError(name, nameError, "Please enter your name.");
+                return false;
+            }
+            setError(name, nameError, "");
+            return true;
+        }
 
-</body>
+        function validateEmail() {
+            const value = email.value.trim();
+            if (!value) {
+                setError(email, emailError, "Email is required.");
+                return false;
+            }
+            if (!emailPattern.test(value)) {
+                setError(email, emailError, "Enter a valid email address.");
+                return false;
+            }
+            setError(email, emailError, "");
+            return true;
+        }
 
-</html>
+        function scorePassword(value) {
+            let score = 0;
+            if (value.length >= 8) score++;
+            if (value.length >= 12) score++;
+            if (/[A-Z]/.test(value) && /[a-z]/.test(value)) score++;
+            if (/\d/.test(value)) score++;
+            if (/[^A-Za-z0-9]/.test(value)) score++;
+            return score; // 0 - 5
+        }
+
+        function updateStrength() {
+            const value = password.value;
+            if (!value) {
+                strengthMeter.classList.remove("is-visible");
+                strengthFill.className = "";
+                strengthLabel.textContent = "";
+                return;
+            }
+            strengthMeter.classList.add("is-visible");
+            const score = scorePassword(value);
+            const levels = [
+                { cls: "weak", text: "Weak" },
+                { cls: "weak", text: "Weak" },
+                { cls: "fair", text: "Fair" },
+                { cls: "good", text: "Good" },
+                { cls: "strong", text: "Strong" },
+                { cls: "strong", text: "Strong" }
+            ];
+            const level = levels[score];
+            strengthFill.className = level.cls;
+            strengthLabel.textContent = level.text;
+        }
+
+        function validatePassword() {
+            const value = password.value;
+            if (!value) {
+                setError(password, passwordError, "Password is required.");
+                return false;
+            }
+            if (value.length < 8) {
+                setError(password, passwordError, "Use at least 8 characters.");
+                return false;
+            }
+            setError(password, passwordError, "");
+            return true;
+        }
+
+        function validateConfirm() {
+            if (!confirmPassword.value) {
+                setError(confirmPassword, confirmError, "Please confirm your password.");
+                return false;
+            }
+            if (confirmPassword.value !== password.value) {
+                setError(confirmPassword, confirmError, "Passwords do not match.");
+                return false;
+            }
+            setError(confirmPassword, confirmError, "");
+            return true;
+        }
+
+        name.addEventListener("blur", validateName);
+        name.addEventListener("input", () => {
+            if (name.classList.contains("input-invalid")) validateName();
+        });
+        email.addEventListener("blur", validateEmail);
+        email.addEventListener("input", () => {
+            if (email.classList.contains("input-invalid")) validateEmail();
+        });
+        password.addEventListener("input", () => {
+            updateStrength();
+            if (password.classList.contains("input-invalid")) validatePassword();
+            if (confirmPassword.value) validateConfirm();
+        });
+        password.addEventListener("blur", validatePassword);
+        confirmPassword.addEventListener("blur", validateConfirm);
+        confirmPassword.addEventListener("input", () => {
+            if (confirmPassword.classList.contains("input-invalid")) validateConfirm();
+        });
+
+        form.addEventListener("submit", (event) => {
+            const okName = validateName();
+            const okEmail = validateEmail();
+            const okPassword = validatePassword();
+            const okConfirm = validateConfirm();
+
+            if (!okName || !okEmail || !okPassword || !okConfirm) {
+                event.preventDefault();
+                const firstInvalid = [name, email, password, confirmPassword].find(
+                    (field) => field.classList.contains("input-invalid")
+                );
+                if (firstInvalid) firstInvalid.focus();
+                return;
+            }
+
+            submitBtn.classList.add("is-loading");
+            submitBtn.disabled = true;
+        });
+    })();
+</script>
+{% endblock %}
+
+</parameter>
+<task_progress>
+- [x] Review login.html and register.html
+- [x] Add interactivity to login page
+- [ ] Add interactivity to register page
+- [ ] Add supporting CSS (toggle, strength meter, errors, spinner)
+- [ ] Verify changes
+</task_progress>
+</write_to_file>

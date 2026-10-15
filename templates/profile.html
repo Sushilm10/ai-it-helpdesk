@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile | Helix{% endblock %}
+{% block page_name %}My profile{% endblock %}
+
+{% block content %}
+<div class="create-ticket-page">
+
+    <div class="create-ticket-heading">
+        <div>
+            <a href="{{ url_for('home') }}" class="back-link">← Back to dashboard</a>
+            <p class="eyebrow">ACCOUNT</p>
+            <h1>My profile</h1>
+            <p class="page-subtitle">
+                Update your profile picture so your team can recognise you.
+            </p>
+        </div>
+        <div class="ticket-heading-icon">✦</div>
+    </div>
+
+    <div class="create-ticket-layout">
+        <div class="ticket-form-card">
+            <div class="ticket-form-header">
+                <div class="form-header-icon">☺</div>
+                <div>
+                    <h2>Profile picture</h2>
+                    <p>Upload an image to personalise your account.</p>
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="ticket-create-form" id="profileForm" novalidate>
+                <div class="profile-avatar-section">
+                    <div class="avatar-preview avatar-preview-lg" id="avatarPreview">
+                        {% if current_user.avatar %}
+                            <img src="{{ url_for('uploaded_avatar', filename=current_user.avatar) }}" alt="Your profile picture">
+                        {% else %}
+                            <span class="avatar-preview-initial">{{ current_user.name[:1]|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="profile-identity">
+                        <strong>{{ current_user.name }}</strong>
+                        <small>{{ current_user.email }}</small>
+                        <span class="profile-role">{{ current_user.role|capitalize }}</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="avatar">Choose a new picture</label>
+                    <div class="avatar-upload-controls">
+                        <label for="avatar" class="avatar-upload-button">Choose image</label>
+                        <input type="file" id="avatar" name="avatar" accept="image/*" hidden>
+                        <small>PNG, JPG, JPEG, GIF, or WEBP. Max 2 MB.</small>
+                        <span class="field-error" id="avatarError"></span>
+                    </div>
+                </div>
+
+                <div class="ticket-form-actions">
+                    {% if current_user.avatar %}
+                    <button type="submit" name="action" value="remove_avatar" class="cancel-button">
+                        Remove picture
+                    </button>
+                    {% endif %}
+                    <button type="submit" class="submit-ticket-button">
+                        Save picture <span class="submit-arrow">→</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <aside class="ticket-help-column">
+            <div class="ticket-ai-card">
+                <div class="ticket-ai-top">
+                    <span class="ticket-ai-symbol">✦</span>
+                    <span class="ticket-ai-label">GUIDELINES</span>
+                </div>
+                <h2>Choosing a picture</h2>
+                <p>
+                    A clear, friendly photo helps teammates recognise you across the workspace.
+                </p>
+                <div class="ticket-ai-divider"></div>
+                <div class="ticket-ai-feature">
+                    <span>✓</span>
+                    <div>
+                        <strong>Square images work best</strong>
+                        <small>They display cleanly in avatars.</small>
+                    </div>
+                </div>
+                <div class="ticket-ai-feature">
+                    <span>✓</span>
+                    <div>
+                        <strong>Keep it under 2 MB</strong>
+                        <small>Large files are rejected automatically.</small>
+                    </div>
+                </div>
+                <div class="ticket-ai-feature">
+                    <span>✓</span>
+                    <div>
+                        <strong>Supported formats</strong>
+                        <small>PNG, JPG, JPEG, GIF, or WEBP.</small>
+                    </div>
+                </div>
+                <p class="ticket-ai-footnote">
+                    Your picture appears in the sidebar, top bar, and team listings.
+                </p>
+            </div>
+        </aside>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.getElementById("profileForm");
+        const avatar = document.getElementById("avatar");
+        const avatarError = document.getElementById("avatarError");
+        const avatarPreview = document.getElementById("avatarPreview");
+        const allowedExtensions = ["png", "jpg", "jpeg", "gif", "webp"];
+        const maxSize = 2 * 1024 * 1024;
+
+        function setError(message) {
+            avatarError.textContent = message;
+            avatar.classList.toggle("input-invalid", Boolean(message));
+        }
+
+        function validateAvatar() {
+            if (!avatar.files.length) {
+                setError("");
+                return true;
+            }
+            const file = avatar.files[0];
+            const ext = file.name.split(".").pop().toLowerCase();
+            if (!allowedExtensions.includes(ext)) {
+                setError("Use a PNG, JPG, JPEG, GIF, or WEBP image.");
+                return false;
+            }
+            if (file.size > maxSize) {
+                setError("Image must be smaller than 2 MB.");
+                return false;
+            }
+            setError("");
+            return true;
+        }
+
+        avatar.addEventListener("change", () => {
+            validateAvatar();
+            const file = avatar.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    avatarPreview.innerHTML =
+                        `<img src="${e.target.result}" alt="Profile preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        form.addEventListener("submit", (event) => {
+            // Allow the "remove picture" button to submit without a file.
+            if (event.submitter && event.submitter.value === "remove_avatar") {
+                return;
+            }
+            if (!validateAvatar()) {
+                event.preventDefault();
+                avatar.focus();
+            }
+        });
+    })();
+</script>
+{% endblock %}
+
+</parameter>
+<task_progress>
+- [x] Review models.py, create_agent.html, base.html
+- [x] Add avatar column to User model
+- [x] Add upload config + migration + helper
+- [x] Add upload handling to create_agent route
+- [x] Add profile picture upload form to create_agent.html
+- [ ] Add agent self-service profile picture page/route
+- [ ] Display avatar in sidebar, dashboards, agent cards
+- [ ] Add supporting CSS
+- [ ] Verify changes
+</task_progress>
+</write_to_file>

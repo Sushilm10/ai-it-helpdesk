@@ -131,8 +131,8 @@ class HelpdeskRouteTests(unittest.TestCase):
             response = client.get("/admin")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"IT Support Administration", response.data)
-        self.assertIn(b"Support Tickets", response.data)
+        self.assertIn(b"Support overview", response.data)
+        self.assertIn(b"Support tickets", response.data)
 
     def test_admin_can_update_ticket_status(self):
         with app.app_context():

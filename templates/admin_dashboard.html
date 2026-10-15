@@ -1,157 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
+{% block title %}Admin Overview | Helix{% endblock %}
+{% block page_name %}Overview{% endblock %}
 
-    <meta charset="UTF-8">
+{% block content %}
+<div class="dashboard-page">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <section class="welcome-section">
+        <div>
+            <p class="eyebrow">ADMINISTRATION</p>
+            <h1>Support overview</h1>
+            <p class="page-subtitle">
+                Monitor, assign, and resolve every support request across the workspace.
+            </p>
+        </div>
 
-    <title>Admin Dashboard - AI IT Helpdesk</title>
+        <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+            <span>＋</span> New ticket
+        </a>
+    </section>
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
+    <section class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">TOTAL TICKETS</span>
+                <span class="stat-icon purple">▤</span>
+            </div>
+            <div class="stat-value">{{ total_tickets }}</div>
+            <p class="stat-caption">All support requests</p>
+        </div>
 
-</head>
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">OPEN TICKETS</span>
+                <span class="stat-icon blue">◷</span>
+            </div>
+            <div class="stat-value">{{ open_tickets }}</div>
+            <p class="stat-caption">Awaiting resolution</p>
+        </div>
 
-<body>
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">HIGH PRIORITY</span>
+                <span class="stat-icon orange">▲</span>
+            </div>
+            <div class="stat-value">{{ high_priority }}</div>
+            <p class="stat-caption">High & critical urgency</p>
+        </div>
 
-    <div class="admin-container">
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">RESOLVED</span>
+                <span class="stat-icon green">✓</span>
+            </div>
+            <div class="stat-value">{{ resolved_tickets }}</div>
+            <p class="stat-caption">Successfully completed</p>
+        </div>
+    </section>
 
-        <header class="admin-header">
-
+    <section class="panel">
+        <div class="panel-header">
             <div>
-                <h1>AI IT Helpdesk</h1>
-
-                <p>
-                    IT Support Administration
-                </p>
+                <h2>Support tickets</h2>
+                <p>Manage and monitor all support requests.</p>
             </div>
+        </div>
 
-            <div class="admin-user">
-
-                <span>
-                    {{ current_user.name }}
-                </span>
-
-                <a href="{{ url_for('create_agent') }}">
-                    + Create IT Agent
-                </a>
-
-                <a href="{{ url_for('analytics') }}">
-                    View Analytics
-                </a>
-
-                <a href="{{ url_for('knowledge_base') }}">
-                    Knowledge Base
-                </a>
-
-                <a href="{{ url_for('logout') }}">
-                    Logout
-                </a>
-
-            </div>
-
-        </header>
-
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div style="margin-bottom: 25px; padding: 12px 18px; border-radius: 8px; background: rgba(70, 200, 120, 0.15); border: 1px solid rgba(70, 200, 120, 0.3);">
-                    {% for message in messages %}
-                        <p style="margin: 0; color: #75e89d; font-weight: 500;">{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <section class="stats-grid">
-
-            <div class="stat-card">
-                <span class="stat-label">
-                    Total Tickets
-                </span>
-
-                <strong class="stat-number">
-                    {{ total_tickets }}
-                </strong>
-            </div>
-
-
-            <div class="stat-card">
-                <span class="stat-label">
-                    Open Tickets
-                </span>
-
-                <strong class="stat-number">
-                    {{ open_tickets }}
-                </strong>
-            </div>
-
-
-            <div class="stat-card">
-                <span class="stat-label">
-                    High Priority
-                </span>
-
-                <strong class="stat-number">
-                    {{ high_priority }}
-                </strong>
-            </div>
-
-
-            <div class="stat-card">
-                <span class="stat-label">
-                    Resolved
-                </span>
-
-                <strong class="stat-number">
-                    {{ resolved_tickets }}
-                </strong>
-            </div>
-
-        </section>
-
-
-        <section class="tickets-section">
-
-            <div class="section-header">
-
-                <div>
-
-                    <h2>
-                        Support Tickets
-                    </h2>
-
-                    <p>
-                        Manage and monitor all support requests.
-                    </p>
-
-                </div>
-
-                <a
-                    class="create-button"
-                    href="{{ url_for('create_ticket') }}"
-                >
-                    + New Ticket
-                </a>
-
-            </div>
-
-            <form method="GET" action="{{ url_for('admin_dashboard') }}" class="filter-form">
-
+        <form method="GET" action="{{ url_for('admin_dashboard') }}" class="admin-filters">
+            <div class="form-group">
+                <label for="search">Search</label>
                 <input
                     type="search"
+                    id="search"
                     name="search"
-                    placeholder="Search tickets..."
+                    placeholder="Search title or description..."
                     value="{{ search }}"
                 >
+            </div>
 
-                <select name="status">
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
                     <option value="">All statuses</option>
                     {% for option in ["Open", "In Progress", "Resolved", "Closed"] %}
                         <option value="{{ option }}"
@@ -160,8 +89,11 @@
                         </option>
                     {% endfor %}
                 </select>
+            </div>
 
-                <select name="priority">
+            <div class="form-group">
+                <label for="priority">Priority</label>
+                <select id="priority" name="priority">
                     <option value="">All priorities</option>
                     {% for option in ["Low", "Medium", "High", "Critical"] %}
                         <option value="{{ option }}"
@@ -170,14 +102,16 @@
                         </option>
                     {% endfor %}
                 </select>
+            </div>
 
-                <select name="agent_id">
+            <div class="form-group">
+                <label for="agent_id">Agent</label>
+                <select id="agent_id" name="agent_id">
                     <option value="">All agents</option>
                     <option value="unassigned"
                         {% if selected_agent_id == "unassigned" %}selected{% endif %}>
                         Unassigned
                     </option>
-
                     {% for agent in agents %}
                         <option value="{{ agent.id }}"
                             {% if selected_agent_id == agent.id|string %}selected{% endif %}>
@@ -185,213 +119,238 @@
                         </option>
                     {% endfor %}
                 </select>
-
-                <button type="submit">Apply Filters</button>
-                <a href="{{ url_for('admin_dashboard') }}">Clear</a>
-
-            </form>
-
-
-            {% if tickets %}
-
-            <div class="table-wrapper">
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-                            <th>Ticket</th>
-                            <th>User</th>
-                            <th>Assigned Agent</th>
-                            <th>Category</th>
-                            <th>Priority</th>
-                            <th>Status</th>
-                            <th>AI</th>
-                            <th>Created</th>
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        {% for ticket in tickets %}
-
-                        <tr>
-
-                            <td>
-
-                                <a
-                                    class="ticket-link"
-                                    href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}"
-                                >
-                                    #{{ ticket.id }} - {{ ticket.title }}
-                                </a>
-
-                            </td>
-
-
-                            <td>
-                                {{ ticket.user.name }}
-                            </td>
-
-
-                            <td>
-                                <form
-                                    method="POST"
-                                    action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}"
-                                >
-                                    <select
-                                        name="assigned_to"
-                                        onchange="this.form.submit()"
-                                        class="status-select"
-                                    >
-                                        <option value="">Unassigned</option>
-
-                                        {% for agent in agents %}
-                                            <option
-                                                value="{{ agent.id }}"
-                                                {% if ticket.assigned_to == agent.id %}selected{% endif %}
-                                            >
-                                                {{ agent.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </form>
-                            </td>
-
-
-                            <td>
-
-                                <span class="category-badge">
-                                    {{ ticket.category }}
-                                </span>
-
-                            </td>
-
-
-                            <td>
-
-                                <span
-                                    class="priority-badge priority-{{ ticket.priority|lower }}"
-                                >
-                                    {{ ticket.priority }}
-                                </span>
-
-                            </td>
-
-
-                            <td>
-
-                                <form
-                                    method="POST"
-                                    action="{{ url_for('update_ticket_status', ticket_id=ticket.id) }}"
-                                >
-                            
-                                    <select
-                                        name="status"
-                                        onchange="this.form.submit()"
-                                        class="status-select"
-                                    >
-                            
-                                        <option
-                                            value="Open"
-                                            {% if ticket.status == "Open" %}selected{% endif %}
-                                        >
-                                            Open
-                                        </option>
-                            
-                                        <option
-                                            value="In Progress"
-                                            {% if ticket.status == "In Progress" %}selected{% endif %}
-                                        >
-                                            In Progress
-                                        </option>
-                            
-                                        <option
-                                            value="Resolved"
-                                            {% if ticket.status == "Resolved" %}selected{% endif %}
-                                        >
-                                            Resolved
-                                        </option>
-                            
-                                        <option
-                                            value="Closed"
-                                            {% if ticket.status == "Closed" %}selected{% endif %}
-                                        >
-                                            Closed
-                                        </option>
-                            
-                                    </select>
-                            
-                                </form>
-                            
-                            </td>
-
-
-                            <td>
-
-                                {% if ticket.ai_analyzed %}
-
-                                    <span class="ai-success">
-                                        ✓ Analyzed
-                                    </span>
-
-                                {% else %}
-
-                                    <span class="ai-pending">
-                                        Not analyzed
-                                    </span>
-
-                                {% endif %}
-
-                            </td>
-
-
-                            <td>
-                                {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-
             </div>
 
-            {% else %}
+            <div class="admin-filters-actions">
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Clear</a>
+            </div>
+        </form>
 
-                <div class="empty-state">
+        {% if tickets %}
 
-                    <h3>
-                        No tickets yet
-                    </h3>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>User</th>
+                        <th>Assigned agent</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>AI</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
 
-                    <p>
-                        Support tickets will appear here.
-                    </p>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>
+                            <a class="ticket-number" href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                                #{{ ticket.id }}
+                            </a>
+                            <div class="ticket-subject">
+                                <strong>{{ ticket.title }}</strong>
+                            </div>
+                        </td>
 
+                        <td>{{ ticket.user.name }}</td>
+
+                        <td>
+                            <form method="POST"
+                                  action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}">
+                                <select name="assigned_to"
+                                        onchange="this.form.submit()"
+                                        class="table-select">
+                                    <option value="">Unassigned</option>
+                                    {% for agent in agents %}
+                                        <option value="{{ agent.id }}"
+                                            {% if ticket.assigned_to == agent.id %}selected{% endif %}>
+                                            {{ agent.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            <span class="category-badge">{{ ticket.category }}</span>
+                        </td>
+
+                        <td>
+                            <span class="priority-label priority-{{ ticket.priority|lower }}">
+                                {{ ticket.priority }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <form method="POST"
+                                  action="{{ url_for('update_ticket_status', ticket_id=ticket.id) }}">
+                                <select name="status"
+                                        onchange="this.form.submit()"
+                                        class="table-select">
+                                    {% for option in ["Open", "In Progress", "Resolved", "Closed"] %}
+                                        <option value="{{ option }}"
+                                            {% if ticket.status == option %}selected{% endif %}>
+                                            {{ option }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            {% if ticket.ai_analyzed %}
+                                <span class="status-badge status-resolved">
+                                    <span class="badge-dot"></span> Analyzed
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-open">
+                                    <span class="badge-dot"></span> Pending
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+            <div class="empty-icon">▤</div>
+            <h3>No tickets found</h3>
+            <p>
+                {% if search or selected_status or selected_priority or selected_agent_id %}
+                    No tickets match your current filters. Try clearing them.
+                {% else %}
+                    Support tickets will appear here as they are created.
+                {% endif %}
+            </p>
+        </div>
+
+        {% endif %}
+    </section>
+
+    <section class="panel team-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Support team</h2>
+                <p>IT agents and their current workload.</p>
+            </div>
+            <a href="{{ url_for('create_agent') }}" class="text-link">Add agent <span>→</span></a>
+        </div>
+
+        {% if team %}
+        <div class="team-grid">
+            {% for member in team %}
+            <div class="agent-card">
+                <div class="agent-avatar">
+                    {% if member.avatar %}
+                        <img src="{{ url_for('uploaded_avatar', filename=member.avatar) }}" alt="{{ member.name }}">
+                    {% else %}
+                        {{ member.name[:1]|upper }}
+                    {% endif %}
                 </div>
+                <div class="agent-info">
+                    <strong>{{ member.name }}</strong>
+                    <small>{{ member.email }}</small>
+                </div>
+                <div class="agent-stats">
+                    <span class="agent-stat">
+                        <em>{{ member.active }}</em> active
+                    </span>
+                    <span class="agent-stat">
+                        <em>{{ member.resolved }}</em> resolved
+                    </span>
+                    <span class="agent-stat agent-stat-total">
+                        <em>{{ member.total }}</em> total
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">♙</div>
+            <h3>No agents yet</h3>
+            <p>Add IT agents so tickets can be assigned to your team.</p>
+            <a href="{{ url_for('create_agent') }}" class="btn btn-primary">Add an agent</a>
+        </div>
+        {% endif %}
+    </section>
 
-            {% endif %}
+    <section class="panel team-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Users</h2>
+                <p>Workspace members and their support requests.</p>
+            </div>
+        </div>
 
-        </section>
+        {% if users %}
+        <div class="team-grid">
+            {% for member in users %}
+            <div class="agent-card">
+                <div class="agent-avatar agent-avatar-user">
+                    {% if member.avatar %}
+                        <img src="{{ url_for('uploaded_avatar', filename=member.avatar) }}" alt="{{ member.name }}">
+                    {% else %}
+                        {{ member.name[:1]|upper }}
+                    {% endif %}
+                </div>
+                <div class="agent-info">
+                    <strong>{{ member.name }}</strong>
+                    <small>{{ member.email }}</small>
+                </div>
+                <div class="agent-stats">
+                    <span class="agent-stat">
+                        <em>{{ member.active }}</em> active
+                    </span>
+                    <span class="agent-stat">
+                        <em>{{ member.resolved }}</em> resolved
+                    </span>
+                    <span class="agent-stat agent-stat-total">
+                        <em>{{ member.total }}</em> total
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">♟</div>
+            <h3>No users yet</h3>
+            <p>Registered workspace members will appear here.</p>
+        </div>
+        {% endif %}
+    </section>
 
+</div>
+{% endblock %}
 
-        <footer class="admin-footer">
-
-            <a href="{{ url_for('home') }}">
-                ← User Dashboard
-            </a>
-
-        </footer>
-
-    </div>
-
-</body>
-
-</html>
+</parameter>
+<task_progress>
+- [x] Examine admin_dashboard.html template structure
+- [x] Examine admin_dashboard route in app.py
+- [x] Inspect live DB state for tickets/users
+- [x] Render /admin page and check if ticket appears in HTML
+- [x] Check CSS for table-hiding and running servers
+- [x] Examine style.css table rules
+- [x] Examine base.html and working templates for new structure
+- [x] Pinpoint missing CSS classes
+- [x] Check if analytics/agent pages are migrated (reference)
+- [x] Verify exact working class names (badges, buttons, forms)
+- [x] Check migrated form pages (create_ticket/ticket) for patterns
+- [ ] Rewrite admin_dashboard.html to new design system
+- [ ] Add supporting CSS (filter row, compact table selects, category badge)
+- [ ] Verify the fix
+</task_progress>
+</write_to_file>

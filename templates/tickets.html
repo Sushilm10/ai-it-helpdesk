@@ -1,79 +1,304 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block title %}My Tickets | Helix{% endblock %}
+{% block page_name %}My tickets{% endblock %}
 
-    <title>My Tickets - AI IT Helpdesk</title>
-</head>
+{% block content %}
+<div class="tickets-page">
 
-<body>
-
-    <h1>My Support Tickets</h1>
-
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <p>
-        <a href="{{ url_for('create_ticket') }}">
-            Create New Ticket
+    <section class="tickets-heading">
+        <div>
+            <p class="eyebrow">YOUR REQUESTS</p>
+            <h1>My support tickets</h1>
+            <p class="page-subtitle">
+                Track every request you've raised, filter by status, and jump back in anytime.
+            </p>
+        </div>
+        <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+            <span>＋</span> New ticket
         </a>
-    </p>
+    </section>
 
-    {% if tickets %}
+    <section class="stats-grid" id="ticketStats">
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">TOTAL TICKETS</span>
+                <span class="stat-icon purple">▤</span>
+            </div>
+            <div class="stat-value" data-count="total">0</div>
+            <p class="stat-caption">All your requests</p>
+        </div>
 
-        {% for ticket in tickets %}
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">OPEN</span>
+                <span class="stat-icon blue">◷</span>
+            </div>
+            <div class="stat-value" data-count="open">0</div>
+            <p class="stat-caption">Awaiting a response</p>
+        </div>
 
-            <hr>
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">IN PROGRESS</span>
+                <span class="stat-icon orange">↻</span>
+            </div>
+            <div class="stat-value" data-count="progress">0</div>
+            <p class="stat-caption">Being worked on</p>
+        </div>
 
-            <h2>
-                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
-                    #{{ ticket.id }} - {{ ticket.title }}
+        <div class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">RESOLVED</span>
+                <span class="stat-icon green">✓</span>
+            </div>
+            <div class="stat-value" data-count="resolved">0</div>
+            <p class="stat-caption">Completed & closed</p>
+        </div>
+    </section>
+
+    <section class="panel tickets-panel">
+        <div class="panel-header">
+            <div>
+                <h2>All tickets</h2>
+                <p id="ticketResultCount">Loading your tickets…</p>
+            </div>
+        </div>
+
+        <form class="tickets-toolbar" id="ticketsToolbar" onsubmit="return false;">
+            <div class="toolbar-search">
+                <span class="toolbar-search-icon">⌕</span>
+                <input type="search"
+                       id="ticketSearch"
+                       placeholder="Search by title, category, or ID…"
+                       autocomplete="off">
+            </div>
+
+            <div class="toolbar-select">
+                <select id="statusFilter" aria-label="Filter by status">
+                    <option value="">All statuses</option>
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                </select>
+            </div>
+
+            <div class="toolbar-select">
+                <select id="priorityFilter" aria-label="Filter by priority">
+                    <option value="">All priorities</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+            </div>
+
+            <div class="toolbar-select">
+                <select id="sortBy" aria-label="Sort tickets">
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="priority">Priority</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+
+            <button type="button" class="toolbar-clear" id="clearFilters">Clear</button>
+        </form>
+
+        <div class="tickets-list" id="ticketsList">
+            {% for ticket in tickets %}
+            <article class="ticket-row"
+                     data-title="{{ ticket.title|lower }}"
+                     data-category="{{ (ticket.category or '')|lower }}"
+                     data-id="{{ ticket.id }}"
+                     data-status="{{ ticket.status }}"
+                     data-priority="{{ ticket.priority }}"
+                     data-created="{{ ticket.created_at.timestamp() if ticket.created_at else 0 }}">
+                <a class="ticket-row-main" href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}">
+                    <div class="ticket-row-id">
+                        <span class="ticket-number">#{{ ticket.id }}</span>
+                        {% if ticket.ai_analyzed %}
+                        <span class="ai-chip" title="Analysed by AI">✦ AI</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="ticket-row-body">
+                        <h3 class="ticket-row-title">{{ ticket.title }}</h3>
+                        <div class="ticket-row-meta">
+                            <span class="category-badge">{{ ticket.category or 'General support' }}</span>
+                            <span class="ticket-row-date">
+                                {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="ticket-row-tags">
+                        <span class="priority-label priority-{{ ticket.priority|lower }}">
+                            {{ ticket.priority }}
+                        </span>
+                        <span class="status-badge status-{{ ticket.status|lower|replace(' ', '-') }}">
+                            <span class="badge-dot"></span>
+                            {{ ticket.status }}
+                        </span>
+                    </div>
+
+                    <span class="ticket-row-arrow" aria-hidden="true">→</span>
                 </a>
-            </h2>
+            </article>
+            {% endfor %}
+        </div>
 
-            <p>
-                <strong>Category:</strong>
-                {{ ticket.category }}
+        <div class="empty-state" id="ticketsEmpty" hidden>
+            <div class="empty-icon">▤</div>
+            <h3>No tickets found</h3>
+            <p id="ticketsEmptyText">
+                Try adjusting your search or filters.
             </p>
+            <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+                Create a ticket
+            </a>
+        </div>
 
-            <p>
-                <strong>Priority:</strong>
-                {{ ticket.priority }}
-            </p>
+        {% if not tickets %}
+        <div class="empty-state" id="ticketsEmptyInitial">
+            <div class="empty-icon">▤</div>
+            <h3>No tickets yet</h3>
+            <p>Create your first support request and let Helix help you.</p>
+            <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+                Create your first ticket
+            </a>
+        </div>
+        {% endif %}
+    </section>
 
-            <p>
-                <strong>Status:</strong>
-                {{ ticket.status }}
-            </p>
+</div>
+{% endblock %}
 
-            <p>
-                Created:
-                {{ ticket.created_at.strftime("%d %B %Y, %I:%M %p") if ticket.created_at else "N/A" }}
-            </p>
+{% block scripts %}
+<script>
+    (function () {
+        const list = document.getElementById("ticketsList");
+        const rows = Array.from(list ? list.querySelectorAll(".ticket-row") : []);
+        const searchInput = document.getElementById("ticketSearch");
+        const statusFilter = document.getElementById("statusFilter");
+        const priorityFilter = document.getElementById("priorityFilter");
+        const sortBy = document.getElementById("sortBy");
+        const clearBtn = document.getElementById("clearFilters");
+        const resultCount = document.getElementById("ticketResultCount");
+        const emptyState = document.getElementById("ticketsEmpty");
+        const emptyText = document.getElementById("ticketsEmptyText");
+        const emptyInitial = document.getElementById("ticketsEmptyInitial");
 
-        {% endfor %}
+        const priorityRank = { "Critical": 4, "High": 3, "Medium": 2, "Low": 1 };
+        const statusRank = { "Open": 4, "In Progress": 3, "Resolved": 2, "Closed": 1 };
 
-    {% else %}
+        // Animate the stat counters on load
+        function animateCount(el, target) {
+            const duration = 600;
+            const start = performance.now();
+            function frame(now) {
+                const progress = Math.min((now - start) / duration, 1);
+                el.textContent = Math.round(target * progress);
+                if (progress < 1) requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        }
 
-        <p>
-            You don't have any support tickets yet.
-        </p>
+        function computeStats() {
+            const stats = { total: rows.length, open: 0, progress: 0, resolved: 0 };
+            rows.forEach(row => {
+                const status = row.dataset.status;
+                if (status === "Open") stats.open++;
+                else if (status === "In Progress") stats.progress++;
+                else if (status === "Resolved" || status === "Closed") stats.resolved++;
+            });
+            document.querySelectorAll("[data-count]").forEach(el => {
+                animateCount(el, stats[el.dataset.count] || 0);
+            });
+        }
 
-    {% endif %}
+        function applyFilters() {
+            const term = (searchInput.value || "").trim().toLowerCase();
+            const status = statusFilter.value;
+            const priority = priorityFilter.value;
 
-    <p>
-        <a href="{{ url_for('home') }}">
-            Back to Dashboard
-        </a>
-    </p>
+            let visible = 0;
 
-</body>
+            rows.forEach(row => {
+                const matchesTerm = !term
+                    || row.dataset.title.includes(term)
+                    || row.dataset.category.includes(term)
+                    || ("#" + row.dataset.id).includes(term);
+                const matchesStatus = !status || row.dataset.status === status;
+                const matchesPriority = !priority || row.dataset.priority === priority;
+                const show = matchesTerm && matchesStatus && matchesPriority;
 
-</html>
+                row.hidden = !show;
+                if (show) visible++;
+            });
+
+            // Sorting
+            const mode = sortBy.value;
+            const sorted = [...rows];
+            sorted.sort((a, b) => {
+                if (mode === "oldest") return a.dataset.created - b.dataset.created;
+                if (mode === "priority") {
+                    return (priorityRank[b.dataset.priority] || 0) - (priorityRank[a.dataset.priority] || 0);
+                }
+                if (mode === "status") {
+                    return (statusRank[b.dataset.status] || 0) - (statusRank[a.dataset.status] || 0);
+                }
+                return b.dataset.created - a.dataset.created; // newest
+            });
+            sorted.forEach(row => list.appendChild(row));
+
+            // Result count + empty state
+            if (resultCount) {
+                resultCount.textContent = visible === rows.length
+                    ? `${rows.length} ticket${rows.length === 1 ? "" : "s"}`
+                    : `${visible} of ${rows.length} ticket${rows.length === 1 ? "" : "s"}`;
+            }
+
+            if (emptyState) {
+                const noneVisible = visible === 0 && rows.length > 0;
+                emptyState.hidden = !noneVisible;
+                if (noneVisible && emptyText) {
+                    emptyText.textContent = "No tickets match your search or filters.";
+                }
+            }
+        }
+
+        if (rows.length) {
+            computeStats();
+            applyFilters();
+        } else if (emptyInitial) {
+            if (resultCount) resultCount.textContent = "No tickets yet";
+        }
+
+        [searchInput, statusFilter, priorityFilter].forEach(el => {
+            el && el.addEventListener("input", applyFilters);
+            el && el.addEventListener("change", applyFilters);
+        });
+        sortBy && sortBy.addEventListener("change", applyFilters);
+
+        clearBtn && clearBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            statusFilter.value = "";
+            priorityFilter.value = "";
+            sortBy.value = "newest";
+            applyFilters();
+        });
+    })();
+</script>
+{% endblock %}
+
+</parameter>
+<task_progress>
+- [x] Review current tickets.html
+- [ ] Redesign tickets page with interactive UI (search, filter, sort, cards)
+- [ ] Add supporting CSS
+- [ ] Add supporting JS
+- [ ] Verify changes
+</task_progress>
+</write_to_file>
