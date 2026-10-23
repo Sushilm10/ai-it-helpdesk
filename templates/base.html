@@ -15,6 +15,12 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='assistant.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='agent-chat.css') }}">
+
     {% block head %}{% endblock %}
 </head>
 
@@ -65,6 +71,12 @@
                         <span class="nav-icon">▦</span>
                         <span>My workspace</span>
                     </a>
+
+                    <a class="nav-link {% if request.endpoint == 'staff_chat' %}active{% endif %}"
+                       href="{{ url_for('staff_chat') }}">
+                        <span class="nav-icon">💬</span>
+                        <span>Live chats</span>
+                    </a>
                 {% else %}
                     <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}"
                        href="{{ url_for('home') }}">
@@ -77,7 +89,27 @@
                         <span class="nav-icon">▤</span>
                         <span>My tickets</span>
                     </a>
+
+                    <a class="nav-link {% if request.endpoint == 'support_chat' %}active{% endif %}"
+                       href="{{ url_for('support_chat') }}">
+                        <span class="nav-icon">💬</span>
+                        <span>Chat with support</span>
+                    </a>
                 {% endif %}
+
+                {% if current_user.role == 'admin' %}
+                    <a class="nav-link {% if request.endpoint == 'staff_chat' %}active{% endif %}"
+                       href="{{ url_for('staff_chat') }}">
+                        <span class="nav-icon">💬</span>
+                        <span>Live chats</span>
+                    </a>
+                {% endif %}
+
+                <a class="nav-link {% if request.endpoint in ['assistant', 'assistant_from_ticket'] %}active{% endif %}"
+                   href="{{ url_for('assistant') }}">
+                    <span class="nav-icon">✦</span>
+                    <span>AI assistant</span>
+                </a>
             </nav>
 
             <div class="sidebar-bottom">
@@ -298,6 +330,23 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        /* Ask for confirmation before a destructive form is submitted. */
+        document.addEventListener("submit", (event) => {
+            const form = event.target;
+
+            if (!form.matches || !form.matches("[data-confirm]")) {
+                return;
+            }
+
+            const message = form.dataset.confirm;
+
+            if (message && !window.confirm(message)) {
+                event.preventDefault();
+            }
+        });
     </script>
 
     {% block scripts %}{% endblock %}

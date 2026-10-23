@@ -1,0 +1,77 @@
+{# Shared rendering for the customer and staff live chat views. #}
+
+{% macro chat_thread(messages, empty_title, empty_text) %}
+    <div class="chat-thread" id="chatThread">
+        {% for message in messages %}
+            <div class="chat-row {% if message.sender_id == current_user.id %}is-mine{% else %}is-theirs{% endif %}">
+                <div class="chat-bubble">
+                    <div class="chat-bubble-head">
+                        <strong>
+                            {% if message.sender_id == current_user.id %}
+                                You
+                            {% else %}
+                                {{ message.sender.name if message.sender else "Former user" }}
+                            {% endif %}
+                        </strong>
+
+                        {% if message.created_at %}
+                            <time datetime="{{ message.created_at.isoformat() }}">
+                                {{ message.created_at.strftime("%d %b %Y, %I:%M %p") }}
+                            </time>
+                        {% endif %}
+                    </div>
+
+                    <p>{{ message.body }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="chat-empty">
+                <div class="chat-empty-icon">💬</div>
+                <h3>{{ empty_title }}</h3>
+                <p>{{ empty_text }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+
+{% macro chat_composer(chat, placeholder) %}
+    <form class="chat-composer"
+          id="chatForm"
+          method="POST"
+          action="{{ url_for('support_chat_send', chat_id=chat.id) }}">
+        <textarea id="chatInput"
+                  name="body"
+                  rows="3"
+                  maxlength="4000"
+                  placeholder="{{ placeholder }}"
+                  required></textarea>
+
+        <div class="chat-composer-footer">
+            <span class="chat-composer-hint">
+                Enter to send · Shift + Enter for a new line
+            </span>
+
+            <button type="submit" class="btn btn-primary" id="chatSend">
+                Send message
+            </button>
+        </div>
+    </form>
+{% endmacro %}
+
+
+{% macro status_pill(chat) %}
+    {% if chat.status == "waiting" %}
+        <span class="chat-status-pill is-waiting">
+            <span class="status-dot"></span> Waiting for an agent
+        </span>
+    {% elif chat.status == "active" %}
+        <span class="chat-status-pill is-active">
+            <span class="status-dot"></span> In progress
+        </span>
+    {% else %}
+        <span class="chat-status-pill is-closed">
+            <span class="status-dot"></span> Closed
+        </span>
+    {% endif %}
+{% endmacro %}

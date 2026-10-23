@@ -2,6 +2,9 @@ import unittest
 
 from werkzeug.security import generate_password_hash
 
+# Points the app at the throwaway test database before it gets imported.
+import tests  # noqa: F401
+
 import app as app_module
 from app import app, db
 from models import Ticket, User

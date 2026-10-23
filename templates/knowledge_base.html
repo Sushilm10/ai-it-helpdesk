@@ -1,75 +1,377 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Knowledge Base</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <main class="admin-container">
-        <header class="admin-header">
-            <div>
-                <h1>IT Knowledge Base</h1>
-                <p>Verified troubleshooting guides for IT support.</p>
+{% block title %}Knowledge Base | Helix{% endblock %}
+{% block page_name %}Knowledge Base{% endblock %}
+
+{% block content %}
+<div class="kb-page">
+
+    <section class="kb-header">
+        <div>
+            <p class="eyebrow">HELIX INTELLIGENCE / KNOWLEDGE BASE</p>
+            <h1>Verified Troubleshooting Guides</h1>
+            <p class="page-subtitle">
+                Search and browse IT support articles to resolve common issues quickly.
+            </p>
+        </div>
+
+        <a href="{{ url_for('create_article') }}" class="btn btn-primary">
+            <span>＋</span> Add Article
+        </a>
+    </section>
+
+    <section class="kb-filters">
+        <form method="GET" class="kb-filter-form">
+            <div class="kb-search-group">
+                <span class="kb-search-icon">⌕</span>
+                <input
+                    type="search"
+                    name="search"
+                    placeholder="Search articles by title or content..."
+                    value="{{ search or '' }}"
+                    autocomplete="off"
+                >
             </div>
-            <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
-        </header>
 
-        {% with messages = get_flashed_messages() %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endwith %}
+            <div class="kb-select-group">
+                <label for="category" class="kb-filter-label">Category</label>
+                <select id="category" name="category">
+                    <option value="">All categories</option>
+                    {% for item in categories %}
+                        <option value="{{ item }}"
+                            {% if selected_category == item %}selected{% endif %}>
+                            {{ item }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <form method="GET" class="filter-form">
-            <input
-                type="search"
-                name="search"
-                placeholder="Search articles..."
-                value="{{ search }}"
-            >
-
-            <select name="category">
-                <option value="">All categories</option>
-                {% for item in categories %}
-                    <option value="{{ item }}"
-                        {% if selected_category == item %}selected{% endif %}>
-                        {{ item }}
-                    </option>
-                {% endfor %}
-            </select>
-
-            <button type="submit">Search</button>
-            <a href="{{ url_for('knowledge_base') }}">Clear</a>
+            <button type="submit" class="btn btn-secondary">Apply</button>
+            <a href="{{ url_for('knowledge_base') }}" class="btn btn-secondary">Clear</a>
         </form>
+    </section>
 
-        <p>
-            <a class="create-button" href="{{ url_for('create_article') }}">
-                + Add Article
-            </a>
-        </p>
-
-        <section class="tickets-section">
-            {% if articles %}
-                {% for article in articles %}
-                    <article style="padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                        <p><span class="category-badge">{{ article.category }}</span></p>
-                        <h2>{{ article.title }}</h2>
-                        <p style="white-space: pre-line;">{{ article.content }}</p>
-                        <small>
-                            Updated {{ article.updated_at.strftime("%d %b %Y") }}
-                        </small>
-                    </article>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">
-                    <h3>No articles found</h3>
-                    <p>Add an article or try a different search.</p>
+    <section class="kb-articles">
+        {% if articles %}
+        <div class="kb-grid">
+            {% for article in articles %}
+            <article class="kb-article-card">
+                <div class="kb-article-header">
+                    <span class="kb-category-badge">{{ article.category }}</span>
+                    <span class="kb-updated">
+                        Updated {{ article.updated_at.strftime("%d %b %Y") if article.updated_at else "N/A" }}
+                    </span>
                 </div>
+
+                <h3 class="kb-article-title">{{ article.title }}</h3>
+
+                <div class="kb-article-excerpt">
+                    {{ article.content[:300] }}{% if article.content|length > 300 %}…{% endif %}
+                </div>
+
+                <div class="kb-article-footer">
+                    <a href="#" class="kb-read-more">Read article <span>→</span></a>
+                    {% if article.created_by %}
+                    <span class="kb-author">
+                        By {{ article.user.name if article.user else "Unknown" }}
+                    </span>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="kb-empty-state">
+            <div class="kb-empty-icon">▤</div>
+            <h3>No articles found</h3>
+            <p>
+                {% if search or selected_category %}
+                    Try adjusting your search or filters.
+                {% else %}
+                    The knowledge base is empty. Add your first article to get started.
+                {% endif %}
+            </p>
+            {% if not search and not selected_category %}
+            <a href="{{ url_for('create_article') }}" class="btn btn-primary">
+                Create your first article
+            </a>
             {% endif %}
-        </section>
-    </main>
-</body>
-</html>
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .kb-page {
+        display: grid;
+        gap: 25px;
+    }
+
+    .kb-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        padding: 7px 0 3px;
+    }
+
+    .kb-header .eyebrow {
+        margin: 0 0 9px;
+        color: #a99aff;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.8px;
+    }
+
+    .kb-header h1 {
+        margin: 0;
+        color: #f5f5fb;
+        font-family: "Manrope", sans-serif;
+        font-size: clamp(24px, 3vw, 32px);
+        font-weight: 800;
+        letter-spacing: -1.2px;
+    }
+
+    .kb-header .page-subtitle {
+        max-width: 600px;
+        margin-top: 9px;
+        color: #9598ad;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    .kb-filters {
+        padding-bottom: 8px;
+    }
+
+    .kb-filter-form {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto;
+        gap: 12px;
+        align-items: end;
+        padding: 0 22px 20px;
+    }
+
+    .kb-search-group {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .kb-search-icon {
+        position: absolute;
+        left: 13px;
+        color: #7b7f96;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .kb-search-group input {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 13px 0 36px;
+        border: 1px solid #303246;
+        border-radius: 10px;
+        outline: none;
+        background: #10121c;
+        color: #ececf6;
+        font-size: 12px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .kb-search-group input::placeholder {
+        color: #686c82;
+    }
+
+    .kb-search-group input:focus {
+        border-color: #8875ff;
+        box-shadow: 0 0 0 3px rgba(136, 117, 255, .12);
+    }
+
+    .kb-select-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .kb-filter-label {
+        color: #8f92a9;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 1.1px;
+    }
+
+    .kb-select-group select {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 11px;
+        border: 1px solid #303246;
+        border-radius: 10px;
+        outline: none;
+        background: #10121c;
+        color: #cfd0e0;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .kb-articles {
+        padding-bottom: 8px;
+    }
+
+    .kb-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        padding: 0 22px 22px;
+    }
+
+    .kb-article-card {
+        border: 1px solid #272939;
+        border-radius: 13px;
+        background: linear-gradient(145deg, #171925, #14161f);
+        transition: border-color .2s, transform .2s;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kb-article-card:hover {
+        transform: translateY(-2px);
+        border-color: #4a4270;
+    }
+
+    .kb-article-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 16px 18px 12px;
+    }
+
+    .kb-category-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 9px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.035);
+        color: #c4c6d8;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    .kb-updated {
+        color: #85899e;
+        font-size: 9px;
+        white-space: nowrap;
+    }
+
+    .kb-article-title {
+        margin: 0 18px 12px;
+        color: #eaeaf5;
+        font-family: "Manrope", sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.4;
+    }
+
+    .kb-article-excerpt {
+        margin: 0 18px 18px;
+        color: #989bb0;
+        font-size: 11px;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+    .kb-article-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 18px 18px;
+        border-top: 1px solid #272939;
+    }
+
+    .kb-read-more {
+        color: #b8aaff;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .kb-read-more:hover {
+        color: #ded7ff;
+    }
+
+    .kb-author {
+        color: #85899e;
+        font-size: 10px;
+    }
+
+    .kb-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 45px 22px;
+        text-align: center;
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.015);
+    }
+
+    .kb-empty-icon {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        margin-bottom: 15px;
+        border: 1px solid #343049;
+        border-radius: 16px;
+        background: rgba(121, 99, 255, 0.1);
+        color: #ad9fff;
+        font-size: 23px;
+    }
+
+    .kb-empty-state h3 {
+        margin: 0;
+        color: #efeff8;
+        font-size: 14px;
+    }
+
+    .kb-empty-state p {
+        max-width: 290px;
+        margin: 8px 0 18px;
+        color: #9194a9;
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    @media (max-width: 650px) {
+        .kb-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .kb-header > .btn {
+            width: 100%;
+        }
+
+        .kb-filter-form {
+            grid-template-columns: minmax(0, 1fr);
+            padding: 0 15px 18px;
+        }
+
+        .kb-grid {
+            grid-template-columns: minmax(0, 1fr);
+            padding: 0 15px 18px;
+        }
+    }
+</style>
+{% endblock %}

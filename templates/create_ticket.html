@@ -32,7 +32,7 @@
                 </div>
             </div>
 
-            <form method="POST" class="ticket-create-form">
+            <form method="POST" class="ticket-create-form" enctype="multipart/form-data">
 
                 <div class="form-group">
                     <label for="title">Ticket title <span>*</span></label>
@@ -88,6 +88,18 @@
                         Choose <strong>Critical</strong> only when the issue causes a
                         major outage or prevents essential work.
                     </p>
+                </div>
+
+                <div class="form-group attachment-upload-field">
+                    <label for="attachments">Attachments <small>(optional)</small></label>
+                    <input
+                        type="file"
+                        id="attachments"
+                        name="attachments"
+                        multiple
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.csv,.zip,.rar,.7z,.png,.jpg,.jpeg,.gif,.webp,.svg"
+                    >
+                    <small>Up to 5 files, 10 MB each. Allowed: documents, archives, and common images.</small>
                 </div>
 
                 <div class="ticket-form-actions">

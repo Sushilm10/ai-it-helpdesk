@@ -141,6 +141,11 @@
                             <span class="badge-dot"></span>
                             {{ ticket.status }}
                         </span>
+                        {% if ticket.due_date %}
+                        <span class="sla-badge sla-{{ ticket.sla_status|default('on_track') }}" title="{{ ticket.time_remaining or 'No due date' }}">
+                            {{ ticket.sla_level or "Standard" }}
+                        </span>
+                        {% endif %}
                     </div>
 
                     <span class="ticket-row-arrow" aria-hidden="true">→</span>

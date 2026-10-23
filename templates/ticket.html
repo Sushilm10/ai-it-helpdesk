@@ -1,4 +1,3 @@
-```html
 {% extends "base.html" %}
 
 {% block title %}Ticket #{{ ticket.id }} | Helix{% endblock %}
@@ -74,6 +73,29 @@
                             {{ ticket.created_at.strftime("%d %b %Y") if ticket.created_at else "N/A" }}
                         </strong>
                     </div>
+
+                    <div class="metadata-item">
+                        <span class="metadata-label">DUE DATE</span>
+                        <strong class="sla-badge sla-{{ ticket.sla_status|default('on_track') }}">
+                            {% if ticket.due_date %}
+                                {{ ticket.due_date.strftime("%d %b %Y") }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span class="metadata-label">SLA LEVEL</span>
+                        <strong>{{ ticket.sla_level or "Standard" }}</strong>
+                    </div>
+
+                    <div class="metadata-item">
+                        <span class="metadata-label">TIME REMAINING</span>
+                        <strong class="sla-time {{ ticket.sla_status|default('on_track') }}">
+                            {{ ticket.time_remaining or "N/A" }}
+                        </strong>
+                    </div>
                 </div>
             </section>
 
@@ -92,6 +114,155 @@
                     <div class="description-timestamp">
                         Submitted {{ ticket.created_at.strftime("%d %B %Y at %I:%M %p") }}
                     </div>
+                {% endif %}
+            </section>
+
+            {% if ticket.attachments %}
+                <section class="detail-panel attachments-panel">
+                    <div class="detail-panel-heading">
+                        <div class="detail-heading-icon">↥</div>
+                        <div>
+                            <h2>Attachments</h2>
+                            <p>{{ ticket.attachments|length }} file{{ "" if ticket.attachments|length == 1 else "s" }} attached to this ticket</p>
+                        </div>
+                    </div>
+                    <ul class="ticket-attachment-list">
+                        {% for attachment in ticket.attachments %}
+                            <li>
+                                <span class="attachment-file-icon">▤</span>
+                                <span class="attachment-file-details">
+                                    <a href="{{ url_for('uploaded_attachment', attachment_id=attachment.id) }}">{{ attachment.original_filename }}</a>
+                                    <small>{{ (attachment.file_size / 1024)|round(1) }} KB</small>
+                                </span>
+                                <a class="attachment-download" href="{{ url_for('uploaded_attachment', attachment_id=attachment.id) }}" aria-label="Download {{ attachment.original_filename }}">Download</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            <section class="detail-panel thread-panel">
+                <div class="detail-panel-heading">
+                    <div class="detail-heading-icon">✉</div>
+                    <div>
+                        <h2>Conversation</h2>
+                        <p>
+                            {% if comments %}
+                                {{ comments|length }} message{{ "" if comments|length == 1 else "s" }} in this ticket
+                            {% else %}
+                                No replies yet
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                {% if comments %}
+                    <div class="thread-toolbar">
+                        <button type="button"
+                                class="btn btn-secondary"
+                                id="aiSummaryButton"
+                                data-summary-url="{{ url_for('ticket_ai_summary', ticket_id=ticket.id) }}">
+                            <span class="thread-toolbar-icon">✦</span>
+                            Summarise with AI
+                        </button>
+
+                        {% if is_staff %}
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    id="aiDraftButton"
+                                    data-draft-url="{{ url_for('ticket_ai_draft', ticket_id=ticket.id) }}">
+                                <span class="thread-toolbar-icon">✦</span>
+                                Draft a reply with AI
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <div class="thread-messages" id="threadMessages">
+                    {% for comment in comments %}
+                        {% set is_ai_comment = comment.is_ai %}
+                        {% set is_removed_author = not is_ai_comment and comment.author is none %}
+                        {% set is_staff_comment = not is_ai_comment and not is_removed_author and comment.author.role in ("admin", "agent") %}
+                        {% set is_mine = not is_ai_comment and not is_removed_author and comment.author.id == current_user.id %}
+                        {% set display_name = "AI assistant" if is_ai_comment else ("Former user" if is_removed_author else comment.author.name) %}
+                        {% set role_label = "AI draft" if is_ai_comment else ("Former user" if is_removed_author else ("Support" if is_staff_comment else "Requester")) %}
+
+                        <div class="thread-message {% if is_ai_comment %}is-ai{% elif is_removed_author %}is-removed{% elif is_mine %}is-mine{% else %}is-staff{% endif %}">
+                            <div class="thread-avatar">
+                                {% if is_ai_comment %}
+                                    ✦
+                                {% elif is_removed_author %}
+                                    ·
+                                {% else %}
+                                    {{ display_name[:1]|upper }}
+                                {% endif %}
+                            </div>
+
+                            <div class="thread-message-body">
+                                <div class="thread-message-meta">
+                                    <strong>{{ display_name }}</strong>
+                                    <span class="thread-role-badge">{{ role_label }}</span>
+                                    {% if comment.created_at %}
+                                        <time datetime="{{ comment.created_at.isoformat() }}">
+                                            {{ comment.created_at.strftime("%d %b %Y, %I:%M %p") }}
+                                        </time>
+                                    {% endif %}
+                                </div>
+
+                                <div class="thread-bubble">{{ comment.body }}</div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="thread-empty">
+                            <div class="thread-empty-icon">✦</div>
+                            <h3>No replies yet</h3>
+                            <p>
+                                {% if is_staff %}
+                                    Send the first reply to the customer below. You can
+                                    let the AI draft it for you.
+                                {% else %}
+                                    The support team will reply here. Add anything that
+                                    might help in the meantime.
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="thread-error" id="threadError" hidden></div>
+
+                <form class="thread-composer"
+                      id="threadForm"
+                      method="POST"
+                      action="{{ url_for('ticket_add_comment', ticket_id=ticket.id) }}">
+                    <label class="thread-composer-label" for="threadInput">
+                        {% if is_staff %}Reply to the customer{% else %}Add a reply{% endif %}
+                    </label>
+
+                    <textarea id="threadInput"
+                              name="body"
+                              rows="4"
+                              maxlength="5000"
+                              placeholder="Write your message here…"
+                              required></textarea>
+
+                    <div class="thread-composer-footer">
+                        <span class="thread-composer-hint">
+                            Enter to send · Shift + Enter for a new line
+                        </span>
+
+                        <button type="submit"
+                                class="btn btn-primary"
+                                id="threadSend">Post reply</button>
+                    </div>
+                </form>
+
+                {% if is_staff %}
+                    <p class="thread-ai-note">
+                        <span>ⓘ</span>
+                        AI drafts are suggestions only. Review and edit the text
+                        before posting it to the customer.
+                    </p>
                 {% endif %}
             </section>
 
@@ -149,6 +320,16 @@
                             security policies before making system changes.
                         </p>
                     </div>
+
+                    <a href="{{ url_for('assistant_from_ticket', ticket_id=ticket.id) }}"
+                       class="ai-chat-cta">
+                        <span class="ai-chat-cta-icon">✦</span>
+                        <span class="ai-chat-cta-copy">
+                            <strong>Still stuck? Chat with the AI assistant</strong>
+                            <small>Get step-by-step help with this exact issue.</small>
+                        </span>
+                        <span class="ai-chat-cta-arrow">→</span>
+                    </a>
 
                 {% elif ticket.ai_error %}
 
@@ -235,10 +416,78 @@
                     If the suggested steps don't solve your issue, contact your
                     support team or add details through your normal support process.
                 </p>
+                <a href="{{ url_for('assistant_from_ticket', ticket_id=ticket.id) }}"
+                   class="support-card-link">
+                    Ask the AI assistant <span>→</span>
+                </a>
+
+                {% if not is_staff %}
+                    <a href="{{ url_for('support_chat', ticket=ticket.id) }}"
+                       class="support-card-link">
+                        Chat with a support agent <span>→</span>
+                    </a>
+                {% endif %}
+
                 <a href="{{ url_for('tickets') }}" class="support-card-link">
                     View all tickets <span>→</span>
                 </a>
             </section>
+
+            {% if not is_staff and ticket.status in ("Resolved", "Closed") %}
+            <section class="ticket-satisfaction-card">
+                <div class="satisfaction-card-icon">★</div>
+                <h3>How was your experience?</h3>
+                <p>
+                    Help us improve by rating the support you received for this ticket.
+                </p>
+
+                {% if ticket.satisfaction_rating %}
+                <div class="satisfaction-completed">
+                    <div class="satisfaction-rating-display">
+                        {% for i in range(1, 6) %}
+                            <span class="satisfaction-star {% if i <= ticket.satisfaction_rating %}filled{% endif %}">★</span>
+                        {% endfor %}
+                        <span class="satisfaction-rating-text">
+                            {{ ticket.satisfaction_rating }}/5
+                        </span>
+                    </div>
+                    {% if ticket.satisfaction_comment %}
+                    <div class="satisfaction-comment">
+                        <em>"{{ ticket.satisfaction_comment }}"</em>
+                    </div>
+                    {% endif %}
+                    <div class="satisfaction-rated-at">
+                        Rated {{ ticket.satisfaction_rated_at.strftime("%d %b %Y") if ticket.satisfaction_rated_at else "N/A" }}
+                    </div>
+                </div>
+                {% else %}
+                <form method="POST" action="{{ url_for('rate_ticket', ticket_id=ticket.id) }}"
+                      class="satisfaction-rating-form">
+                    <div class="satisfaction-stars">
+                        {% for i in range(5, 0, -1) %}
+                        <button type="submit"
+                                name="rating"
+                                value="{{ i }}"
+                                class="satisfaction-star-btn"
+                                data-rating="{{ i }}"
+                                title="{{ i }} star{{ 's' if i != 1 else '' }}">
+                            ★
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <div class="satisfaction-comment-field">
+                        <textarea name="comment"
+                                  rows="3"
+                                  placeholder="Optional feedback about your experience…"
+                                  maxlength="500"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary satisfaction-submit-btn">
+                        Submit Rating
+                    </button>
+                </form>
+                {% endif %}
+            </section>
+            {% endif %}
 
             <div class="ticket-navigation-links">
                 <a href="{{ url_for('tickets') }}">← My Tickets</a>
@@ -255,4 +504,7 @@
     </div>
 </div>
 {% endblock %}
-```
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='ticket-thread.js') }}"></script>
+{% endblock %}

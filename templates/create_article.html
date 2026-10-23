@@ -1,32 +1,52 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Knowledge Article</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <main class="admin-container">
-        <h1>Create Knowledge Article</h1>
-        <p>Add a troubleshooting guide to the IT knowledge base.</p>
+{% block title %}Create Article | Helix{% endblock %}
+{% block page_name %}Create Article{% endblock %}
 
-        {% with messages = get_flashed_messages() %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endwith %}
+{% block content %}
+<div class="create-article-page">
 
-        <form method="POST">
-            <p>
-                <label for="title">Article title</label><br>
-                <input id="title" name="title" maxlength="200" required>
+    <section class="article-header">
+        <div>
+            <a href="{{ url_for('knowledge_base') }}" class="back-link">
+                <span>←</span> Back to knowledge base
+            </a>
+            <p class="eyebrow">HELIX INTELLIGENCE / KNOWLEDGE BASE</p>
+            <h1>Create a troubleshooting guide</h1>
+            <p class="page-subtitle">
+                Share verified solutions so the support team can resolve issues faster.
             </p>
+        </div>
+    </section>
 
-            <p>
-                <label for="category">Category</label><br>
+    <section class="article-form-card">
+        <div class="article-form-header">
+            <div class="form-header-icon">▤</div>
+            <div>
+                <h2>Article details</h2>
+                <p>Fields marked with * are required.</p>
+            </div>
+        </div>
+
+        <form method="POST" class="article-create-form">
+
+            <div class="form-group">
+                <label for="title">Article title <span>*</span></label>
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    placeholder="e.g. How to reset a forgotten Windows password"
+                    maxlength="200"
+                    required
+                >
+                <small>Write a clear, descriptive title that helps others find this article.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category <span>*</span></label>
                 <select id="category" name="category" required>
+                    <option value="">Select a category</option>
                     <option value="Hardware">Hardware</option>
                     <option value="Software">Software</option>
                     <option value="Network">Network</option>
@@ -34,21 +54,280 @@
                     <option value="Security">Security</option>
                     <option value="Other">Other</option>
                 </select>
-            </p>
+                <small>Choose the category that best fits this troubleshooting guide.</small>
+            </div>
 
-            <p>
-                <label for="content">Troubleshooting instructions</label><br>
+            <div class="form-group">
+                <label for="content">Troubleshooting instructions <span>*</span></label>
                 <textarea
                     id="content"
                     name="content"
-                    rows="10"
+                    rows="12"
+                    placeholder="Step-by-step instructions for resolving this issue…"
                     required
                 ></textarea>
-            </p>
+                <small>Include clear steps, expected outcomes, and any prerequisites.</small>
+            </div>
 
-            <button type="submit">Save Article</button>
-            <a href="{{ url_for('knowledge_base') }}">Cancel</a>
+            <div class="article-form-actions">
+                <a href="{{ url_for('knowledge_base') }}" class="cancel-button">Cancel</a>
+                <button type="submit" class="submit-article-button">
+                    <span>＋</span> Save article <span class="submit-arrow">→</span>
+                </button>
+            </div>
+
         </form>
-    </main>
-</body>
-</html>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .create-article-page {
+        display: grid;
+        gap: 25px;
+    }
+
+    .article-header {
+        padding: 7px 0 3px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 22px;
+        color: #999bb1;
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .back-link:hover {
+        color: #c1b5ff;
+    }
+
+    .article-header .eyebrow {
+        margin: 0 0 9px;
+        color: #a99aff;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 1.6px;
+    }
+
+    .article-header h1 {
+        margin: 0;
+        color: #f5f5fb;
+        font-family: "Manrope", sans-serif;
+        font-size: clamp(24px, 3vw, 31px);
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .article-header .page-subtitle {
+        max-width: 600px;
+        margin-top: 9px;
+        color: #9598ad;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    .article-form-card {
+        border: 1px solid #292b3e;
+        border-radius: 16px;
+        background: #151722;
+        overflow: hidden;
+    }
+
+    .article-form-header {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 23px 25px;
+        border-bottom: 1px solid #292b3e;
+        background: linear-gradient(110deg, rgba(121,99,255,.06), transparent);
+    }
+
+    .form-header-icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border: 1px solid #38334f;
+        border-radius: 12px;
+        background: #211f34;
+        color: #b6a8ff;
+        font-size: 19px;
+    }
+
+    .article-form-header h2 {
+        margin: 0;
+        color: #f0f0f8;
+        font-family: "Manrope", sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .article-form-header p {
+        margin: 5px 0 0;
+        color: #8e91a6;
+        font-size: 11px;
+    }
+
+    .article-create-form {
+        display: grid;
+        gap: 22px;
+        padding: 25px;
+    }
+
+    .article-create-form .form-group {
+        display: grid;
+        gap: 9px;
+        min-width: 0;
+    }
+
+    .article-create-form label {
+        color: #dedfee;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .article-create-form label span {
+        color: #b5a6ff;
+    }
+
+    .article-create-form input,
+    .article-create-form textarea,
+    .article-create-form select {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        border: 1px solid #303246;
+        border-radius: 10px;
+        outline: none;
+        background: #10121c;
+        color: #ececf6;
+        font: inherit;
+        font-size: 12px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .article-create-form input,
+    .article-create-form select {
+        min-height: 47px;
+        padding: 0 13px;
+    }
+
+    .article-create-form textarea {
+        min-height: 200px;
+        padding: 13px;
+        line-height: 1.7;
+        resize: vertical;
+    }
+
+    .article-create-form input::placeholder,
+    .article-create-form textarea::placeholder {
+        color: #686c82;
+    }
+
+    .article-create-form select {
+        color-scheme: dark;
+        cursor: pointer;
+    }
+
+    .article-create-form input:focus,
+    .article-create-form textarea:focus,
+    .article-create-form select:focus {
+        border-color: #8875ff;
+        box-shadow: 0 0 0 3px rgba(136,117,255,.12);
+    }
+
+    .article-create-form .form-group > small {
+        color: #85899e;
+        font-size: 10px;
+        line-height: 1.6;
+    }
+
+    .article-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 20px;
+        border-top: 1px solid #292b3e;
+    }
+
+    .cancel-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 43px;
+        padding: 0 17px;
+        border: 1px solid #343649;
+        border-radius: 9px;
+        color: #b2b4c7;
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: background .2s;
+    }
+
+    .cancel-button:hover {
+        background: #222433;
+    }
+
+    .submit-article-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-height: 43px;
+        padding: 0 17px;
+        border: 0;
+        border-radius: 9px;
+        background: linear-gradient(110deg, #7963ff, #9871ff);
+        color: white;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(121,99,255,.15);
+        transition: transform .2s, filter .2s;
+    }
+
+    .submit-article-button:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.1);
+    }
+
+    .submit-arrow {
+        margin-left: 3px;
+        font-size: 15px;
+    }
+
+    @media (max-width: 650px) {
+        .create-article-page {
+            gap: 19px;
+        }
+
+        .article-form-header {
+            padding: 18px;
+        }
+
+        .article-create-form {
+            gap: 19px;
+            padding: 18px;
+        }
+
+        .article-form-actions {
+            flex-wrap: wrap;
+        }
+
+        .cancel-button,
+        .submit-article-button {
+            flex: 1;
+        }
+    }
+</style>
+{% endblock %}

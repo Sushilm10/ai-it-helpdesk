@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% import "_agent_chat.html" as chat with context %}
+
+{% block title %}Live chats | Helix{% endblock %}
+{% block page_name %}Live chats{% endblock %}
+
+{% block content %}
+<div class="chat-page">
+
+    <div class="chat-heading">
+        <div>
+            <p class="eyebrow">SUPPORT INBOX</p>
+            <h1>Live chats</h1>
+            <p class="page-subtitle">
+                Pick up waiting conversations and talk to customers in
+                real time.
+            </p>
+        </div>
+
+        <div class="chat-heading-stats">
+            <span class="chat-stat is-waiting">
+                <em>{{ waiting|length }}</em> waiting
+            </span>
+            <span class="chat-stat is-active">
+                <em>{{ active|length }}</em> active
+            </span>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <span>{{ message }}</span>
+                        <button type="button"
+                                class="flash-close"
+                                aria-label="Dismiss message">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="chat-layout">
+
+        <aside class="chat-sidebar">
+
+            <section class="chat-panel">
+                <div class="chat-panel-head">
+                    <h2>Waiting</h2>
+                    <span class="chat-count">{{ waiting|length }}</span>
+                </div>
+
+                {% if waiting %}
+                    <div class="chat-list">
+                        {% for item in waiting %}
+                            <div class="chat-list-item is-waiting">
+                                <div class="chat-list-item-top">
+                                    <strong>{{ item.subject }}</strong>
+                                </div>
+
+                                <div class="chat-list-item-bottom">
+                                    <span>
+                                        {{ item.customer.name if item.customer else "Former user" }}
+                                    </span>
+
+                                    {% if item.created_at %}
+                                        <time datetime="{{ item.created_at.isoformat() }}">
+                                            {{ item.created_at.strftime("%d %b, %I:%M %p") }}
+                                        </time>
+                                    {% endif %}
+                                </div>
+
+                                <form class="chat-claim-form"
+                                      method="POST"
+                                      action="{{ url_for('staff_chat_claim', chat_id=item.id) }}">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        Take this chat
+                                    </button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="chat-panel-empty">
+                        Nothing waiting. New chats land here automatically.
+                    </p>
+                {% endif %}
+            </section>
+
+            <section class="chat-panel">
+                <div class="chat-panel-head">
+                    <h2>In progress</h2>
+                    <span class="chat-count">{{ active|length }}</span>
+                </div>
+
+                {% if active %}
+                    <div class="chat-list">
+                        {% for item in active %}
+                            <a class="chat-list-item {% if active_chat and item.id == active_chat.id %}is-active{% endif %}"
+                               href="{{ url_for('staff_chat', chat=item.id) }}">
+                                <div class="chat-list-item-top">
+                                    <strong>{{ item.subject }}</strong>
+                                    {{ chat.status_pill(item) }}
+                                </div>
+
+                                <div class="chat-list-item-bottom">
+                                    <span>
+                                        {{ item.customer.name if item.customer else "Former user" }}
+                                        {% if item.agent %}
+                                            · {{ item.agent.name }}
+                                        {% endif %}
+                                    </span>
+
+                                    {% if item.updated_at %}
+                                        <time datetime="{{ item.updated_at.isoformat() }}">
+                                            {{ item.updated_at.strftime("%d %b, %I:%M %p") }}
+                                        </time>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="chat-panel-empty">
+                        No active conversations right now.
+                    </p>
+                {% endif %}
+            </section>
+
+            {% if closed %}
+                <section class="chat-panel">
+                    <div class="chat-panel-head">
+                        <h2>Recently closed</h2>
+                    </div>
+
+                    <div class="chat-list">
+                        {% for item in closed %}
+                            <a class="chat-list-item is-closed"
+                               href="{{ url_for('staff_chat', chat=item.id) }}">
+                                <div class="chat-list-item-top">
+                                    <strong>{{ item.subject }}</strong>
+                                    {{ chat.status_pill(item) }}
+                                </div>
+
+                                <div class="chat-list-item-bottom">
+                                    <span>
+                                        {{ item.customer.name if item.customer else "Former user" }}
+                                    </span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <section class="chat-panel">
+                <div class="chat-panel-head">
+                    <h2>Team availability</h2>
+                </div>
+
+                <div class="chat-agent-list">
+                    {% for agent in agents %}
+                        <div class="chat-agent-row">
+                            <div class="chat-agent-avatar">
+                                {% if agent.avatar %}
+                                    <img src="{{ url_for('uploaded_avatar', filename=agent.avatar) }}"
+                                         alt="{{ agent.name }}">
+                                {% else %}
+                                    {{ agent.name[:1]|upper }}
+                                {% endif %}
+                                <span class="chat-agent-presence {% if agent.is_free %}is-free{% endif %}"></span>
+                            </div>
+
+                            <div class="chat-agent-details">
+                                <strong>{{ agent.name }}</strong>
+                                <small>
+                                    {% if agent.is_free %}
+                                        Available now
+                                    {% else %}
+                                        Busy with {{ agent.active_chats }} chat{{ "" if agent.active_chats == 1 else "s" }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+        </aside>
+
+        <section class="chat-window">
+
+            {% if active_chat %}
+                <header class="chat-window-head">
+                    <div>
+                        <h2>{{ active_chat.subject }}</h2>
+                        <p>
+                            Customer:
+                            <strong>
+                                {{ active_chat.customer.name if active_chat.customer else "Former user" }}
+                            </strong>
+                            {% if active_chat.customer and active_chat.customer.email %}
+                                ({{ active_chat.customer.email }})
+                            {% endif %}
+                            {% if active_chat.agent %}
+                                · Handled by
+                                <strong>{{ active_chat.agent.name }}</strong>
+                            {% endif %}
+                        </p>
+
+                        {% if active_chat.ticket_id %}
+                            <a class="chat-ticket-link"
+                               href="{{ url_for('ticket_detail', ticket_id=active_chat.ticket_id) }}">
+                                View linked ticket #{{ active_chat.ticket_id }} →
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="chat-window-actions">
+                        {{ chat.status_pill(active_chat) }}
+
+                        {% if active_chat.status == "waiting" %}
+                            <form method="POST"
+                                  action="{{ url_for('staff_chat_claim', chat_id=active_chat.id) }}">
+                                <button type="submit" class="btn btn-primary">
+                                    Take this chat
+                                </button>
+                            </form>
+                        {% elif active_chat.status == "active" %}
+                            <form method="POST"
+                                  action="{{ url_for('staff_chat_close', chat_id=active_chat.id) }}">
+                                <button type="submit" class="btn btn-secondary">
+                                    Close chat
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </header>
+
+                <div class="chat-window-body"
+                     id="chatWindow"
+                     data-chat-id="{{ active_chat.id }}"
+                     data-messages-url="{{ url_for('support_chat_messages', chat_id=active_chat.id) }}"
+                     data-last-message-id="{{ active_chat.messages[-1].id if active_chat.messages else 0 }}">
+                    {{ chat.chat_thread(
+                        active_chat.messages,
+                        "No messages yet",
+                        "The customer has not written anything in this chat."
+                    ) }}
+                </div>
+
+                {% if active_chat.status != "closed" %}
+                    {{ chat.chat_composer(
+                        active_chat,
+                        "Reply to the customer…"
+                    ) }}
+                {% else %}
+                    <p class="chat-closed-note">
+                        This chat has been closed.
+                    </p>
+                {% endif %}
+
+            {% else %}
+                <div class="chat-window-empty">
+                    <div class="chat-empty-icon">💬</div>
+                    <h2>Pick a conversation</h2>
+                    <p>
+                        Choose a waiting chat to take it on, or open one of
+                        the conversations already in progress.
+                    </p>
+                </div>
+            {% endif %}
+
+        </section>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='agent-chat.js') }}"></script>
+{% endblock %}

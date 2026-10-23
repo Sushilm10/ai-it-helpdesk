@@ -152,7 +152,9 @@
                                 #{{ ticket.id }}
                             </a>
                             <div class="ticket-subject">
-                                <strong>{{ ticket.title }}</strong>
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="ticket-title-link">
+                                    <strong>{{ ticket.title }}</strong>
+                                </a>
                             </div>
                         </td>
 
@@ -274,6 +276,16 @@
                         <em>{{ member.total }}</em> total
                     </span>
                 </div>
+                {% if member.id != current_user.id %}
+                <form class="member-delete-form"
+                      method="POST"
+                      action="{{ url_for('delete_user', user_id=member.id) }}"
+                      data-confirm="Delete the agent {{ member.name }}? Their account will be removed permanently and their assigned tickets unassigned.">
+                    <button type="submit"
+                            class="member-delete-button"
+                            title="Delete {{ member.name }}">Delete</button>
+                </form>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -321,6 +333,14 @@
                         <em>{{ member.total }}</em> total
                     </span>
                 </div>
+                <form class="member-delete-form"
+                      method="POST"
+                      action="{{ url_for('delete_user', user_id=member.id) }}"
+                      data-confirm="Delete {{ member.name }}? Their account will be removed permanently and their tickets reassigned to you.">
+                    <button type="submit"
+                            class="member-delete-button"
+                            title="Delete {{ member.name }}">Delete</button>
+                </form>
             </div>
             {% endfor %}
         </div>

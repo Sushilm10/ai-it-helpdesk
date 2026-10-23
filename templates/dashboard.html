@@ -15,9 +15,19 @@
             </p>
         </div>
 
-        <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
-            <span>＋</span> Create a ticket
-        </a>
+        <div class="welcome-actions">
+            <a href="{{ url_for('assistant') }}" class="btn btn-secondary">
+                <span>✦</span> Ask the AI assistant
+            </a>
+
+            <a href="{{ url_for('support_chat') }}" class="btn btn-secondary">
+                <span>💬</span> Chat with an agent
+            </a>
+
+            <a href="{{ url_for('create_ticket') }}" class="btn btn-primary">
+                <span>＋</span> Create a ticket
+            </a>
+        </div>
     </section>
 
     <section class="stats-grid">
@@ -172,8 +182,12 @@
                 </div>
             </div>
 
-            <a href="{{ url_for('create_ticket') }}" class="ai-panel-button">
-                Get IT support <span>→</span>
+            <a href="{{ url_for('assistant') }}" class="ai-panel-button">
+                Chat with the AI <span>→</span>
+            </a>
+
+            <a href="{{ url_for('create_ticket') }}" class="ai-panel-button ai-panel-button-ghost">
+                Create a ticket <span>→</span>
             </a>
 
             <p class="ai-disclaimer">
@@ -186,9 +200,12 @@
         <div class="help-banner-icon">?</div>
         <div>
             <strong>Need help with something?</strong>
-            <p>Submit a ticket with details about your issue to get started.</p>
+            <p>Chat with the AI assistant for instant guidance, or submit a ticket for the support team.</p>
         </div>
-        <a href="{{ url_for('create_ticket') }}" class="text-link">Get support →</a>
+        <div class="help-banner-links">
+            <a href="{{ url_for('assistant') }}" class="text-link">Ask the AI →</a>
+            <a href="{{ url_for('create_ticket') }}" class="text-link">Get support →</a>
+        </div>
     </section>
 
     <section class="panel team-panel">
@@ -222,6 +239,11 @@
                         <em>{{ member.resolved }}</em> resolved
                     </span>
                 </div>
+                <a href="{{ url_for('support_chat', agent=member.id) }}"
+                   class="agent-chat-button"
+                   title="Chat with {{ member.name }}">
+                    <span>💬</span> Chat
+                </a>
             </div>
             {% endfor %}
         </div>

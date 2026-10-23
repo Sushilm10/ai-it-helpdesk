@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% import "_agent_chat.html" as chat with context %}
+
+{% block title %}Chat with support | Helix{% endblock %}
+{% block page_name %}Chat with support{% endblock %}
+
+{% block content %}
+<div class="chat-page">
+
+    <div class="chat-heading">
+        <div>
+            <p class="eyebrow">LIVE SUPPORT</p>
+            <h1>Chat with a support agent</h1>
+            <p class="page-subtitle">
+                Talk to a real member of the IT team. Pick an agent if you
+                know who you want, or let the next free agent pick it up.
+            </p>
+        </div>
+
+        <a href="{{ url_for('assistant') }}" class="btn btn-secondary">
+            <span>✦</span> AI assistant
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        <span>{{ message }}</span>
+                        <button type="button"
+                                class="flash-close"
+                                aria-label="Dismiss message">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="chat-layout">
+
+        <aside class="chat-sidebar">
+
+            <section class="chat-panel">
+                <div class="chat-panel-head">
+                    <h2>Start a new chat</h2>
+                </div>
+
+                <form class="chat-start-form"
+                      method="POST"
+                      action="{{ url_for('support_chat_start') }}">
+
+                    {% if linked_ticket %}
+                        <div class="chat-linked-ticket">
+                            <span class="chat-linked-label">LINKED TICKET</span>
+                            <strong>#{{ linked_ticket.id }} — {{ linked_ticket.title }}</strong>
+                            <input type="hidden"
+                                   name="ticket_id"
+                                   value="{{ linked_ticket.id }}">
+                        </div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="chatSubject">What is this about?</label>
+                        <input type="text"
+                               id="chatSubject"
+                               name="subject"
+                               maxlength="200"
+                               placeholder="Short summary of the issue"
+                               value="{{ linked_ticket.title if linked_ticket else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="chatAgent">Talk to</label>
+                        <select id="chatAgent" name="agent_id">
+                            <option value="">Any available agent</option>
+                            {% for agent in agents %}
+                                <option value="{{ agent.id }}"
+                                        {% if selected_agent_id == agent.id %}selected{% endif %}>
+                                    {{ agent.name }}
+                                    {% if agent.is_free %}
+                                        — available
+                                    {% else %}
+                                        — busy ({{ agent.active_chats }})
+                                    {% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="chatStartBody">How can we help?</label>
+                        <textarea id="chatStartBody"
+                                  name="body"
+                                  rows="4"
+                                  maxlength="4000"
+                                  placeholder="Describe the problem and what you have already tried."
+                                  required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Start chat
+                    </button>
+                </form>
+            </section>
+
+            <section class="chat-panel">
+                <div class="chat-panel-head">
+                    <h2>My chats</h2>
+                    <span class="chat-count">{{ chats|length }}</span>
+                </div>
+
+                {% if chats %}
+                    <div class="chat-list">
+                        {% for item in chats %}
+                            <a class="chat-list-item {% if active_chat and item.id == active_chat.id %}is-active{% endif %}"
+                               href="{{ url_for('support_chat', chat=item.id) }}">
+                                <div class="chat-list-item-top">
+                                    <strong>{{ item.subject }}</strong>
+                                    {{ chat.status_pill(item) }}
+                                </div>
+
+                                <div class="chat-list-item-bottom">
+                                    <span>
+                                        {% if item.agent %}
+                                            {{ item.agent.name }}
+                                        {% else %}
+                                            Waiting for an agent
+                                        {% endif %}
+                                    </span>
+
+                                    {% if item.updated_at %}
+                                        <time datetime="{{ item.updated_at.isoformat() }}">
+                                            {{ item.updated_at.strftime("%d %b, %I:%M %p") }}
+                                        </time>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="chat-panel-empty">
+                        You have not started any chats yet.
+                    </p>
+                {% endif %}
+            </section>
+
+            {% if agents %}
+                <section class="chat-panel">
+                    <div class="chat-panel-head">
+                        <h2>Support team</h2>
+                    </div>
+
+                    <div class="chat-agent-list">
+                        {% for agent in agents %}
+                            <div class="chat-agent-row">
+                                <div class="chat-agent-avatar">
+                                    {% if agent.avatar %}
+                                        <img src="{{ url_for('uploaded_avatar', filename=agent.avatar) }}"
+                                             alt="{{ agent.name }}">
+                                    {% else %}
+                                        {{ agent.name[:1]|upper }}
+                                    {% endif %}
+                                    <span class="chat-agent-presence {% if agent.is_free %}is-free{% endif %}"></span>
+                                </div>
+
+                                <div class="chat-agent-details">
+                                    <strong>{{ agent.name }}</strong>
+                                    <small>
+                                        {% if agent.is_free %}
+                                            Available now
+                                        {% else %}
+                                            Busy with {{ agent.active_chats }} chat{{ "" if agent.active_chats == 1 else "s" }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+        </aside>
+
+        <section class="chat-window">
+
+            {% if active_chat %}
+                <header class="chat-window-head">
+                    <div>
+                        <h2>{{ active_chat.subject }}</h2>
+                        <p>
+                            {% if active_chat.agent %}
+                                You are chatting with
+                                <strong>{{ active_chat.agent.name }}</strong>
+                            {% else %}
+                                An agent will join this chat shortly
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="chat-window-actions">
+                        {{ chat.status_pill(active_chat) }}
+
+                        {% if active_chat.status != "closed" %}
+                            <form method="POST"
+                                  action="{{ url_for('support_chat_close', chat_id=active_chat.id) }}">
+                                <button type="submit" class="btn btn-secondary">
+                                    Close chat
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </header>
+
+                <div class="chat-window-body"
+                     id="chatWindow"
+                     data-chat-id="{{ active_chat.id }}"
+                     data-messages-url="{{ url_for('support_chat_messages', chat_id=active_chat.id) }}"
+                     data-last-message-id="{{ active_chat.messages[-1].id if active_chat.messages else 0 }}">
+                    {{ chat.chat_thread(
+                        active_chat.messages,
+                        "No messages yet",
+                        "Send a message below and an agent will pick it up."
+                    ) }}
+                </div>
+
+                {% if active_chat.status != "closed" %}
+                    {{ chat.chat_composer(
+                        active_chat,
+                        "Write your message…"
+                    ) }}
+                {% else %}
+                    <p class="chat-closed-note">
+                        This chat has been closed. Start a new chat if you
+                        still need help.
+                    </p>
+                {% endif %}
+
+            {% else %}
+                <div class="chat-window-empty">
+                    <div class="chat-empty-icon">💬</div>
+                    <h2>Start a conversation</h2>
+                    <p>
+                        Pick a support agent on the left, describe your
+                        problem and they will reply here in real time.
+                    </p>
+                </div>
+            {% endif %}
+
+        </section>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='agent-chat.js') }}"></script>
+{% endblock %}
